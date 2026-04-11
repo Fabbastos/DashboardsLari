@@ -30,11 +30,10 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Dados com Contatos Reais (Valor e Entrada = 0 são "Contatos")
+# 2. Dados
 def load_data():
     columns = ['Cliente', 'Canal', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto', 'País', 'Mês']
     data = [
-        # CLIENTES (Vendas)
         ['Ana Silva', 'Lead', 'ID-DEFINITIVO', 5000, 5000, '20-25', 0, 'Brasil', 'Janeiro'],
         ['Bruno Costa', 'Kalil', 'TRC PROV.', 1500, 500, '31-35', 0, 'Portugal', 'Janeiro'],
         ['Carla Souza', 'Lead', 'AE TODAS', 4500, 4500, '40-45', 0, 'Brasil', 'Fevereiro'],
@@ -42,8 +41,6 @@ def load_data():
         ['Erik Rocha', 'Lead', 'Carta AE', 6000, 3000, '26-30', 1000, 'Brasil', 'Março'],
         ['Gabriel Mendes', 'Lead', 'ID-DEFINITIVO', 5200, 5200, '20-25', 0, 'Brasil', 'Janeiro'],
         ['Juliana Paes', 'Kalil', 'AB CARRO', 7500, 7500, '40-45', 0, 'EUA', 'Fevereiro'],
-        
-        # CONTATOS (Leads que não compraram ainda)
         ['Lucas Lima', 'Lead', 'Potencial', 0, 0, '26-30', 0, 'Brasil', 'Janeiro'],
         ['Mariana Rios', 'Lead', 'Potencial', 0, 0, '31-35', 0, 'Brasil', 'Janeiro'],
         ['Pedro Sales', 'Lead', 'Potencial', 0, 0, '20-25', 0, 'Portugal', 'Fevereiro'],
@@ -73,16 +70,15 @@ with head_col2:
 
 df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
 
-# --- MÉTRICAS ---
+# --- MÉTRICAS (Reorganizado para 4 colunas) ---
 def render_metrics(channel, color):
     subset = df[df['Canal'] == channel]
     st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
-    m1, m2, m3, m4, m5 = st.columns(5)
+    m1, m2, m3, m4 = st.columns(4)
     m1.metric("Faturamento", f"R$ {subset['Valor'].sum():,.0f}")
     m2.metric("Pago à Vista", f"R$ {subset['Pago Vista'].sum():,.0f}")
     m3.metric("Pago Parcelado", f"R$ {subset['Pago Parcelado'].sum():,.0f}")
     m4.metric("Saldo Parcelado", f"R$ {subset['Saldo Parcelado'].sum():,.0f}")
-    m5.metric("Saldo Total", f"R$ {subset['Saldo Total'].sum():,.0f}")
 
 render_metrics('Lead', COLOR_LEAD)
 render_metrics('Kalil', COLOR_KALIL)
@@ -101,16 +97,13 @@ def aplicar_estilo(fig):
 # --- GRÁFICOS ---
 c1, c2, c3 = st.columns(3)
 with c1:
-    # Lógica do Funil Real Baseado na Tabela
     funnel_rows = []
     for canal in ["Lead", "Kalil"]:
         canal_df = df[df['Canal'] == canal]
-        total_leads = len(canal_df)
-        vendas = len(canal_df[canal_df['Total Pago'] > 0])
-        funnel_rows.append({'Etapa': '1. Contatos', 'Canal': canal, 'Qtd': total_leads})
-        funnel_rows.append({'Etapa': '2. Clientes', 'Canal': canal, 'Qtd': vendas})
+        funnel_rows.append({'Etapa': '1. Contatos', 'Canal': canal, 'Qtd': len(canal_df)})
+        funnel_rows.append({'Etapa': '2. Clientes', 'Canal': canal, 'Qtd': len(canal_df[canal_df['Total Pago'] > 0])})
     
-    fig1 = px.funnel(pd.DataFrame(funnel_rows), x='Qtd', y='Etapa', color='Canal', title="Funil Real (Base de Dados)", color_discrete_map=PALETA_MAP)
+    fig1 = px.funnel(pd.DataFrame(funnel_rows), x='Qtd', y='Etapa', color='Canal', title="Funil Real", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo(fig1), use_container_width=True)
 
 with c2:
