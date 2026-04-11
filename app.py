@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS ULTRA COMPACTO (Ajustado para Títulos Maiores) ---
+# --- CSS ULTRA COMPACTO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -23,9 +23,8 @@ st.markdown(f"""
         color: white;
     }}
     
-    /* Títulos LEAD e KALIL Aumentados */
     .channel-label {{
-        font-size: 1.1rem !important; /* Fonte maior conforme solicitado */
+        font-size: 1.1rem !important;
         font-weight: 800 !important;
         margin-bottom: 5px !important;
         margin-top: 5px !important;
@@ -36,7 +35,6 @@ st.markdown(f"""
         width: 100%;
     }}
 
-    /* Cards de Métricas Ultra Achatados */
     div[data-testid="stMetric"] {{
         background-color: #1E293B;
         padding: 2px 10px !important;
@@ -48,7 +46,6 @@ st.markdown(f"""
     div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; color: white !important; }}
 
     hr {{ margin: 8px 0px !important; opacity: 0.1; }}
-    
     [data-testid="column"] {{ padding: 0px 5px !important; }}
     </style>
     """, unsafe_allow_html=True)
@@ -101,7 +98,7 @@ def get_metrics(channel):
 l_m = get_metrics('Lead')
 k_m = get_metrics('Kalil')
 
-# --- BLOCO DE MÉRICAS LEAD ---
+# --- MÉRICAS LEAD ---
 st.markdown(f"<p class='channel-label' style='color:{COLOR_LEAD}'>LEAD</p>", unsafe_allow_html=True)
 l1, l2, l3, l4 = st.columns(4)
 l1.metric("Faturamento", f"R$ {l_m['fat']:,.0f}")
@@ -109,7 +106,7 @@ l2.metric("Total Pago", f"R$ {l_m['pago']:,.0f}")
 l3.metric("Saldo", f"R$ {l_m['saldo']:,.0f}")
 l4.metric("Ticket Médio", f"R$ {l_m['ticket']:,.0f}")
 
-# --- BLOCO DE MÉRICAS KALIL ---
+# --- MÉRICAS KALIL ---
 st.markdown(f"<p class='channel-label' style='color:{COLOR_KALIL}'>KALIL</p>", unsafe_allow_html=True)
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Faturamento", f"R$ {k_m['fat']:,.0f}")
@@ -119,15 +116,22 @@ k4.metric("Ticket Médio", f"R$ {k_m['ticket']:,.0f}")
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# --- GRÁFICOS (Layout 3x2) ---
+# --- GRÁFICOS ---
 c1, c2, c3 = st.columns(3)
 with c1:
-    fig1 = px.funnel(pd.DataFrame({'Etapa':['Contatos','Clientes','Contatos','Vendas'],'Canal':['Lead','Lead','Kalil','Kalil'],'Qtd':[40,4,12,2]}), 
-                     x='Qtd', y='Etapa', color='Canal', title="Conversão", color_discrete_map=PALETA_MAP)
+    # Ajustado: De "Vendas" para "Clientes" para ambos os canais
+    df_funil = pd.DataFrame({
+        'Etapa': ['1. Contatos', '2. Clientes', '1. Contatos', '2. Clientes'],
+        'Canal': ['Lead', 'Lead', 'Kalil', 'Kalil'],
+        'Qtd': [40, 4, 12, 2]
+    })
+    fig1 = px.funnel(df_funil, x='Qtd', y='Etapa', color='Canal', title="Conversão", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig1), use_container_width=True)
+
 with c2:
     fig2 = px.bar(df.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Produtos", color_discrete_sequence=[COLOR_LEAD])
     st.plotly_chart(aplicar_estilo_dashboard(fig2), use_container_width=True)
+
 with c3:
     fig3 = px.bar(df.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Idade", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig3), use_container_width=True)
@@ -136,9 +140,11 @@ c4, c5, c6 = st.columns(3)
 with c4:
     fig4 = px.bar(df.groupby(["País", "Canal"])["Valor"].sum().reset_index(), x="País", y="Valor", color="Canal", title="Geográfico", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig4), use_container_width=True)
+
 with c5:
     fig5 = px.bar(df.groupby(["Doc_Status", "Canal"])["Valor"].count().reset_index(), x="Valor", y="Doc_Status", color="Canal", orientation='h', title="Status Docs", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig5), use_container_width=True)
+
 with c6:
     fig6 = px.bar(df[df['Saldo'] > 0], x="Cliente", y="Saldo", color="Canal", title="Inadimplência", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig6), use_container_width=True)
