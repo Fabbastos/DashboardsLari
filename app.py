@@ -6,35 +6,26 @@ import plotly.express as px
 st.set_page_config(page_title="Executive CRM", layout="wide")
 
 # --- CORES IDENTIDADE ---
-# Usando cores claras para os textos e as solicitadas para os dados
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#8B4513", "#FFB347", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO ---
+# --- CSS RESPONSIVO E FIX FILTRO/TEXTOS ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.2rem 1rem 5rem 1rem !important; }}
     
-    /* Força cor branca em elementos HTML gerais */
+    /* Força cor branca em textos HTML */
     * {{ color: {TEXT_COLOR} !important; }}
     
-    /* AJUSTE DO FILTRO (SELECTBOX) PARA MOBILE */
+    /* FIX FILTRO SELECTBOX (Para não ficar branco no mobile) */
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         border: 1px solid #334155 !important;
     }}
-    ul[role="listbox"] {{
-        background-color: #1E293B !important;
-    }}
-    li[role="option"] {{
-        background-color: #1E293B !important;
-        color: {TEXT_COLOR} !important;
-    }}
-    li[role="option"]:hover {{
-        background-color: #334155 !important;
-    }}
-    
+    div[role="listbox"] {{ background-color: #1E293B !important; }}
+    div[role="option"] {{ color: white !important; }}
+
     header {{ visibility: hidden; height: 0px; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
@@ -42,7 +33,7 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* AJUSTE DAS MÉTRICAS PARA EVITAR SOBREPOSIÇÃO */
+    /* MÉTRICAS: Evita sobreposição no Mobile */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
         padding: 10px 12px !important; 
@@ -55,38 +46,20 @@ st.markdown(f"""
         display: flex !important;
         flex-direction: column !important; 
         align-items: flex-start !important;
-        gap: 2px !important;
     }}
 
-    div[data-testid="stMetricLabel"] {{ 
-        font-size: 0.75rem !important; 
-        color: #CBD5E1 !important; /* Um cinza claro para o label */
-        line-height: 1.2 !important;
-        margin-bottom: 4px !important;
-    }}
-    
-    div[data-testid="stMetricValue"] {{ 
-        font-size: 1.1rem !important; 
-        font-weight: bold; 
-        line-height: 1 !important;
-        color: {TEXT_COLOR} !important;
-    }}
+    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; color: #CBD5E1 !important; }}
+    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
 
-    /* Estilo específico para PC (Telas largas) para manter layout original */
+    /* Mantém horizontal no PC */
     @media (min-width: 992px) {{
-        div[data-testid="stMetric"] > div {{
-            flex-direction: row !important;
-            flex-wrap: wrap !important;
-            align-items: baseline !important;
-            gap: 5px 10px !important;
-        }}
+        div[data-testid="stMetric"] > div {{ flex-direction: row !important; gap: 10px !important; }}
         div[data-testid="stMetric"] {{ min-height: 65px !important; }}
     }}
     </style>
     """, unsafe_allow_html=True)
 
 # 2. Conexão com a Planilha
-# Mantendo a lógica de carregamento de dados original
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
 SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
@@ -95,25 +68,21 @@ def load_data():
     try:
         df = pd.read_csv(SHEET_URL)
         df.columns = [c.strip() for c in df.columns]
-
         def clean_currency(value):
             if isinstance(value, str):
                 clean_val = value.replace('€', '').replace('.', '').replace(',', '.').strip()
                 return pd.to_numeric(clean_val, errors='coerce')
             return value
-
         for col in ['Valor', 'Entrada', 'Segundo_Pagto']:
             if col in df.columns:
                 df[col] = df[col].apply(clean_currency).fillna(0)
-
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
         df['Pago Vista'] = df.apply(lambda x: x['Valor'] if x['Entrada'] == x['Valor'] and x['Valor'] > 0 else 0, axis=1)
         df['Pago Parcelado'] = df.apply(lambda x: x['Total Pago'] if x['Entrada'] < x['Valor'] else 0, axis=1)
         df['Saldo Parcelado'] = df.apply(lambda x: x['Saldo Total'] if x['Entrada'] < x['Valor'] else 0, axis=1)
         return df
-    except:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
 df_base = load_data()
 
@@ -135,18 +104,12 @@ if not df_base.empty:
         fat = subset['Valor'].sum()
         st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
         m1, m2, m3, m4 = st.columns(4)
-        
         m1.metric("Faturamento", f"€ {fat:,.0f}".replace(',', '.'))
-        
-        def pct(parte):
-            return (parte / fat * 100) if fat > 0 else 0
-
+        def pct(p): return (p / fat * 100) if fat > 0 else 0
         v = subset['Pago Vista'].sum()
         m2.metric("Pago à Vista", f"€ {v:,.0f}".replace(',', '.'), delta=f"{pct(v):.0f}%")
-        
         p = subset['Pago Parcelado'].sum()
         m3.metric("Pago Parcelado", f"€ {p:,.0f}".replace(',', '.'), delta=f"{pct(p):.0f}%")
-        
         s = subset['Saldo Parcelado'].sum()
         m4.metric("Saldo Parcelado", f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse")
 
@@ -154,37 +117,12 @@ if not df_base.empty:
     render_metrics('Kalil', COLOR_KALIL)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS (Ajustado para textos claros) ---
-    def estilo(fig):
-        # Correção principal: Forçando a cor branca no layout do Plotly
+    # --- GRÁFICOS (ESTILO SEGURO) ---
+    def estilo_base(fig):
         fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', 
-            plot_bgcolor='rgba(0,0,0,0)',
-            # Define a cor global da fonte do gráfico como branca
-            font=dict(color=TEXT_COLOR, size=11), 
-            title=dict(font=dict(color=TEXT_COLOR)), # Cor do título
-            margin=dict(l=5, r=5, t=35, b=5), 
-            height=210,
-            hovermode=False, 
-            legend=dict(
-                orientation="h", 
-                yanchor="bottom", 
-                y=1.02, 
-                xanchor="right", 
-                x=1,
-                font=dict(color=TEXT_COLOR) # Cor do texto da legenda
-            )
-        )
-        # Força a cor branca nos eixos e rótulos dos eixos
-        fig.update_xaxes(
-            tickfont=dict(color=TEXT_COLOR),
-            titlefont=dict(color=TEXT_COLOR),
-            gridcolor='rgba(255,255,255,0.1)' # Opcional: grade sutil
-        )
-        fig.update_yaxes(
-            tickfont=dict(color=TEXT_COLOR),
-            titlefont=dict(color=TEXT_COLOR),
-            gridcolor='rgba(255,255,255,0.1)' # Opcional: grade sutil
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=210,
+            hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         return fig
 
@@ -197,34 +135,38 @@ if not df_base.empty:
             sub = df[df['Canal'] == c]
             fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
             fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
-        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
-        # Ajusta a cor do texto dentro das fatias do funil
-        fig1.update_traces(textinfo="value+percent initial", textfont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
+        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil", color_discrete_map=PALETA_MAP)
+        st.plotly_chart(estilo_base(fig1), use_container_width=True, config=conf)
 
     with c2:
-        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
-        # Ajusta a cor do texto/rótulos nas barras (se houver)
-        fig2.update_traces(textfont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
+        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix (€)", color_discrete_sequence=[COLOR_LEAD])
+        fig2.update_xaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
+        fig2.update_yaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
+        st.plotly_chart(estilo_base(fig2), use_container_width=True, config=conf)
 
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
-        fig3.update_xaxes(categoryorder='category ascending')
-        st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
+        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Vendas/Idade", color_discrete_map=PALETA_MAP)
+        fig3.update_xaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
+        fig3.update_yaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
+        st.plotly_chart(estilo_base(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
+        fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Países", color_discrete_map=PALETA_MAP)
+        fig4.update_xaxes(tickfont=dict(color=TEXT_COLOR))
+        fig4.update_yaxes(tickfont=dict(color=TEXT_COLOR))
+        st.plotly_chart(estilo_base(fig4), use_container_width=True, config=conf)
 
     with c5:
-        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
-        fig5.update_xaxes(categoryorder='category ascending')
-        st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
+        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Fat./Idade", color_discrete_map=PALETA_MAP)
+        fig5.update_xaxes(tickfont=dict(color=TEXT_COLOR))
+        fig5.update_yaxes(tickfont=dict(color=TEXT_COLOR))
+        st.plotly_chart(estilo_base(fig5), use_container_width=True, config=conf)
 
     with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
+        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldos (€)", color_discrete_map=PALETA_MAP)
+        fig6.update_xaxes(tickfont=dict(color=TEXT_COLOR))
+        fig6.update_yaxes(tickfont=dict(color=TEXT_COLOR))
+        st.plotly_chart(estilo_base(fig6), use_container_width=True, config=conf)
 
-st.write(""); st.write("")
+st.write("")
