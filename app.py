@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO COM QUEBRA AUTOMÁTICA (FLEX-WRAP) ---
+# --- CSS RESPONSIVO E CORREÇÃO DO FILTRO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -22,7 +22,17 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* Estilização dos Cards com Flexbox Inteligente */
+    /* Correção do Selectbox (Filtro) para não ficar branco no mobile */
+    div[data-baseweb="select"] > div {{
+        background-color: #1E293B !important;
+        color: white !important;
+        border: 1px solid #334155 !important;
+    }}
+    div[data-testid="stSelectbox"] label {{ color: white !important; }}
+    div[role="listbox"] {{ background-color: #1E293B !important; }}
+    div[role="option"] {{ color: white !important; background-color: #1E293B !important; }}
+
+    /* Estilização dos Cards */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
         padding: 8px 12px !important; 
@@ -31,44 +41,20 @@ st.markdown(f"""
         height: auto !important;
     }}
     
-    /* Container que segura o Valor e o Delta */
     div[data-testid="stMetric"] > div {{
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: wrap !important; /* PERMITE QUEBRAR PARA BAIXO SE NÃO COUBER */
+        flex-wrap: wrap !important;
         align-items: baseline !important;
         gap: 5px 10px !important;
     }}
 
-    div[data-testid="stMetricLabel"] {{ 
-        font-size: 0.75rem !important; 
-        color: #CBD5E1 !important; 
-        margin-bottom: 2px !important;
-        width: 100%;
-    }}
-    
-    div[data-testid="stMetricValue"] {{ 
-        font-size: 1.1rem !important; 
-        font-weight: bold; 
-        line-height: 1.1;
-        white-space: nowrap; /* Garante que o número não quebre no meio */
-    }}
-    
-    div[data-testid="stMetricDelta"] {{ 
-        font-size: 0.85rem !important; 
-        font-weight: 500 !important;
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-    }}
+    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; color: #CBD5E1 !important; width: 100%; }}
+    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; white-space: nowrap; }}
+    div[data-testid="stMetricDelta"] {{ font-size: 0.85rem !important; font-weight: 500 !important; white-space: nowrap; }}
 
-    /* Ajuste específico para mobile deitado/pequeno */
     @media (max-width: 768px) {{
-        [data-testid="column"] {{ 
-            width: 100% !important; 
-            flex: 1 1 100% !important; 
-            margin-bottom: 8px; 
-        }}
+        [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 8px; }}
         div[data-testid="stMetricValue"] {{ font-size: 1.0rem !important; }}
     }}
     </style>
@@ -83,17 +69,14 @@ def load_data():
     try:
         df = pd.read_csv(SHEET_URL)
         df.columns = [c.strip() for c in df.columns]
-
         def clean_currency(value):
             if isinstance(value, str):
                 clean_val = value.replace('€', '').replace('.', '').replace(',', '.').strip()
                 return pd.to_numeric(clean_val, errors='coerce')
             return value
-
         for col in ['Valor', 'Entrada', 'Segundo_Pagto']:
             if col in df.columns:
                 df[col] = df[col].apply(clean_currency).fillna(0)
-
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
         df['Pago Vista'] = df.apply(lambda x: x['Valor'] if x['Entrada'] == x['Valor'] and x['Valor'] > 0 else 0, axis=1)
@@ -106,35 +89,27 @@ def load_data():
 df_base = load_data()
 
 if not df_base.empty:
-    # --- CABEÇALHO ---
     head_col1, head_col2 = st.columns([4, 1])
     with head_col1:
         st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
     with head_col2:
         meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
-        mes_filtro = st.selectbox("", meses, label_visibility="collapsed")
+        mes_filtro = st.selectbox("Mês", meses, label_visibility="collapsed")
 
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- MÉTRICAS ---
     def render_metrics(channel, color):
         subset = df[df['Canal'] == channel]
         fat = subset['Valor'].sum()
         st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
         m1, m2, m3, m4 = st.columns(4)
-        
         m1.metric("Faturamento", f"€ {fat:,.0f}".replace(',', '.'))
-        
-        def pct(parte):
-            return (parte / fat * 100) if fat > 0 else 0
-
+        def pct(parte): return (parte / fat * 100) if fat > 0 else 0
         v = subset['Pago Vista'].sum()
         m2.metric("Pago à Vista", f"€ {v:,.0f}".replace(',', '.'), delta=f"{pct(v):.0f}%")
-        
         p = subset['Pago Parcelado'].sum()
         m3.metric("Pago Parcelado", f"€ {p:,.0f}".replace(',', '.'), delta=f"{pct(p):.0f}%")
-        
         s = subset['Saldo Parcelado'].sum()
         m4.metric("Saldo Parcelado", f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse")
 
@@ -142,7 +117,6 @@ if not df_base.empty:
     render_metrics('Kalil', COLOR_KALIL)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS ---
     def estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -161,7 +135,9 @@ if not df_base.empty:
             fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
             fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
-        fig1.update_traces(textinfo="value+percent initial")
+        # OCULTAR OS 100% E RÓTULOS LATERAIS
+        fig1.update_traces(textinfo="value") 
+        fig1.update_layout(yaxis_tickfont_color='rgba(0,0,0,0)') 
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
