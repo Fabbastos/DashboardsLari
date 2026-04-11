@@ -8,28 +8,38 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS ULTRA COMPACTO ---
+# --- CSS REFINADO (AJUSTE DE ESPAÇAMENTO) ---
 st.markdown(f"""
     <style>
-    /* Remove todos os espaçamentos desnecessários */
-    .block-container {{ padding: 0rem 1rem !important; }}
+    /* Remove margens padrão e define o fundo */
+    .stApp {{ background-color: #0F172A; }}
+    .block-container {{ padding: 0.5rem 1rem !important; }}
     header, footer {{ visibility: hidden; height: 0px; }}
     
-    /* Título menor e colado no topo */
-    .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 0px 0px 5px 0px; }}
+    /* Título com margem inferior para não grudar nos cards */
+    .main-title {{ 
+        font-size: 1.3rem !important; 
+        font-weight: bold; 
+        margin-top: 5px;
+        margin-bottom: 20px !important; /* Respiro entre título e cards */
+        color: white;
+    }}
     
-    /* Metrics compactas: Valor e Label na mesma linha ou muito próximos */
+    /* Cards de Métricas mais baixos e com margem inferior */
     div[data-testid="stMetric"] {{
         background-color: #1E293B;
-        padding: 2px 10px !important;
+        padding: 8px 12px !important;
         border: 1px solid #334155;
-        height: 60px; /* Altura fixa baixa */
+        height: 75px; /* Altura ideal */
+        margin-bottom: 15px !important; /* Respiro entre cards e gráficos */
     }}
-    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; margin-bottom: -10px; }}
-    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; }}
     
-    /* Remove o espaço entre as colunas e os gráficos */
-    .element-container, .stPlotlyChart {{ margin-bottom: -10px !important; }}
+    div[data-testid="stMetricLabel"] {{ font-size: 0.8rem !important; color: #CBD5E1 !important; }}
+    div[data-testid="stMetricValue"] {{ font-size: 1.2rem !important; font-weight: bold; color: white !important; }}
+
+    /* Remove o divisor padrão do Streamlit se quiser algo mais limpo, 
+       ou controle a margem dele: */
+    hr {{ margin: 0.5rem 0rem 1.5rem 0rem !important; opacity: 0.2; }}
     </style>
     """, unsafe_allow_html=True)
 
