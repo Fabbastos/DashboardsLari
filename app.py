@@ -81,6 +81,8 @@ def aplicar_estilo_dashboard(fig):
     )
     fig.update_xaxes(title="", gridcolor='#1E293B', tickfont=dict(size=10))
     fig.update_yaxes(title="", gridcolor='#1E293B', tickfont=dict(size=10))
+    # Garante que textos dentro de barras/funis sejam brancos
+    fig.update_traces(textfont_color="white") 
     return fig
 
 # 3. Layout Principal
@@ -119,13 +121,14 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # --- GRÁFICOS ---
 c1, c2, c3 = st.columns(3)
 with c1:
-    # Ajustado: De "Vendas" para "Clientes" para ambos os canais
     df_funil = pd.DataFrame({
         'Etapa': ['Contatos', 'Clientes', 'Contatos', 'Clientes'],
         'Canal': ['Lead', 'Lead', 'Kalil', 'Kalil'],
         'Qtd': [40, 4, 12, 2]
     })
     fig1 = px.funnel(df_funil, x='Qtd', y='Etapa', color='Canal', title="Conversão", color_discrete_map=PALETA_MAP)
+    # Forçando texto branco especificamente no funil
+    fig1.update_traces(textinfo="value", textfont=dict(color="white", size=12))
     st.plotly_chart(aplicar_estilo_dashboard(fig1), use_container_width=True)
 
 with c2:
