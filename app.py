@@ -66,13 +66,19 @@ if not uploaded_file:
 
 st.markdown("---")
 
-# 5. Métricas Principais
-m1, m2, m3, m4, m5 = st.columns(5)
-m1.metric("Volume de Vendas", f"R$ {df['Valor'].sum():,.2f}")
-m2.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
-m3.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
-m4.metric("Vendas Fechadas", total_vendas_count)
-m5.metric("Conversão", f"{taxa_conversao:.1f}%")
+# 5. Métricas Principais (Divididas em duas linhas para não cortar o texto)
+st.markdown("### 📊 Resumo Executivo")
+row1_1, row1_2, row1_3 = st.columns(3)
+row2_1, row2_2 = st.columns(2)
+
+# Linha 1: Financeiro
+row1_1.metric("Volume de Vendas", f"R$ {df['Valor'].sum():,.2f}")
+row1_2.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
+row1_3.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
+
+# Linha 2: Performance
+row2_1.metric("Vendas Fechadas", f"{total_vendas_count} unidades")
+row2_2.metric("Taxa de Conversão", f"{taxa_conversao:.1f}%")
 
 st.markdown("---")
 
