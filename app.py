@@ -17,12 +17,12 @@ st.markdown("""
 st.sidebar.header("📁 Importação de Dados")
 uploaded_file = st.sidebar.file_uploader("Carregue seu arquivo CSV do CRM", type=["csv"])
 
-# Função para carregar os dados (usa os dados padrão se nenhum arquivo for enviado)
+# Função para carregar os dados
 def load_data():
     if uploaded_file is not None:
         return pd.read_csv(uploaded_file)
     else:
-        # Dados padrão (fallback) para o dashboard não iniciar vazio
+        # Dados padrão
         data = [
             ['Ana Silva', 'Instagram', 'VIP', 5000, 2500, '20-25 anos', 1000, '2026-04-10', 'Brasil', 'Não'],
             ['Bruno Costa', 'Kalil', 'Standard', 1500, 500, '30-35 anos', 0, '2026-04-10', 'Portugal', 'Sim'],
@@ -41,7 +41,7 @@ for col in numeric_cols:
 
 df['Saldo'] = df['Valor'] - (df['Entrada'] + df['Segundo_Pagto'])
 
-# 4. Interface Principal
+# 4. Interface Principal e Cabeçalho
 st.title("📊 CRM Dashboard | Gestão Kalil")
 if uploaded_file:
     st.success(f"Arquivo '{uploaded_file.name}' carregado com sucesso!")
@@ -50,14 +50,38 @@ else:
 
 st.markdown("---")
 
-# Métricas
+# 5. Relatório Inteligente (Simulação de IA)
+st.markdown("### 🤖 Gerador de Insights Analíticos")
+if st.button("Gerar Relatório dos Dados Atuais"):
+    # Cálculos dinâmicos para a "IA"
+    total_vendas = df['Valor'].sum()
+    top_pais = df.groupby('País')['Valor'].sum().idxmax()
+    top_origem = df.groupby('Indicador')['Valor'].sum().idxmax()
+    perc_receber = (df['Saldo'].sum() / total_vendas) * 100 if total_vendas > 0 else 0
+    qtd_vip = len(df[df['Categoria'] == 'VIP'])
+    
+    # Texto gerado dinamicamente
+    relatorio = f"""
+    **Análise Executiva:**
+    Identificamos que o faturamento total alcançou **R$ {total_vendas:,.2f}**, sendo o mercado de **{top_pais}** o principal responsável pelo volume financeiro atual.
+    
+    A principal fonte de atração de clientes pagantes neste período foi via **{top_origem}**. Atualmente, você possui **{qtd_vip} cliente(s) VIP** na sua base ativa.
+    
+    **Ponto de Atenção:** Aproximadamente **{perc_receber:.1f}%** do valor das vendas ainda está pendente (Saldo a Receber). Recomenda-se acionar a equipe de cobrança para os pagamentos de segunda parcela.
+    """
+    st.info(relatorio)
+
+st.markdown("---")
+
+# 6. Métricas Principais
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Volume de Vendas", f"R$ {df['Valor'].sum():,.2f}")
 m2.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
 m3.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
 m4.metric("Total Clientes", len(df))
 
-# 5. Seção de Gráficos
+# 7. Seção de Gráficos 2D
+st.markdown("### 📈 Visualizações Essenciais")
 col1, col2 = st.columns(2)
 
 with col1:
@@ -100,6 +124,24 @@ with col4:
                      color_discrete_sequence=["#27ae60", "#e74c3c"])
     st.plotly_chart(fig_pag, use_container_width=True)
 
-# 6. Tabela de Dados
-st.markdown("### Visualização dos Dados Importados")
+# 8. Gráfico 3D Multidimensional
+st.markdown("### 🌌 Mapeamento de Vendas em 3D")
+# Relaciona País (Eixo X), Categoria (Eixo Y) e Valor da Venda (Eixo Z - Altura), colorindo pela Origem
+fig_3d = px.scatter_3d(
+    df, 
+    x='País', 
+    y='Categoria', 
+    z='Valor',
+    color='Indicador', 
+    size='Valor', 
+    hover_name='Cliente',
+    title="Análise Cruzada: País x Categoria x Valor",
+    color_discrete_sequence=px.colors.qualitative.Prism
+)
+# Ajusta o tamanho do gráfico 3D
+fig_3d.update_layout(margin=dict(l=0, r=0, b=0, t=40), height=600)
+st.plotly_chart(fig_3d, use_container_width=True)
+
+# 9. Tabela de Dados
+st.markdown("### 📋 Visualização dos Dados Brutos")
 st.dataframe(df, use_container_width=True)
