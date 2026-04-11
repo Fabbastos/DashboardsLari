@@ -78,24 +78,40 @@ def aplicar_estilo_legivel(fig):
 # 3. Layout
 st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
 
-# --- Categorização de Cards ---
-col_fat, col_saldo, col_extra = st.columns([2, 2, 1])
+# --- Cálculos Segmentados ---
+def get_metrics(channel):
+    subset = df[df['Canal'] == channel]
+    return {
+        "fat": subset['Valor'].sum(),
+        "pago": subset['Total Pago'].sum(),
+        "saldo": subset['Saldo'].sum(),
+        "ticket": subset['Valor'].mean() if len(subset) > 0 else 0
+    }
 
-with col_fat:
-    m1, m2 = st.columns(2)
-    m1.metric("Faturamento LEAD", f"R$ {df[df['Canal']=='Lead']['Valor'].sum():,.0f}")
-    m2.metric("Faturamento KALIL", f"R$ {df[df['Canal']=='Kalil']['Valor'].sum():,.0f}")
+lead_m = get_metrics('Lead')
+kalil_m = get_metrics('Kalil')
 
-with col_saldo:
-    m3, m4 = st.columns(2)
-    # Calculando saldo por canal
-    saldo_lead = df[df['Canal']=='Lead']['Saldo'].sum()
-    saldo_kalil = df[df['Canal']=='Kalil']['Saldo'].sum()
-    m3.metric("Saldo LEAD", f"R$ {saldo_lead:,.0f}")
-    m4.metric("Saldo KALIL", f"R$ {saldo_kalil:,.0f}")
+# --- Layout de Métricas em Linhas ---
+st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
 
-with col_extra:
-    st.metric("Ticket Médio Geral", f"R$ {df['Valor'].mean():,.0f}")
+# LINHA 1: LEAD (Azul)
+st.markdown("<p style='margin-bottom: -10px; color: #5BC0EB; font-weight: bold; font-size: 0.9rem;'>PERFORMANCE LEAD</p>", unsafe_allow_html=True)
+l1, l2, l3, l4 = st.columns(4)
+l1.metric("Faturamento", f"R$ {lead_m['fat']:,.0f}")
+l2.metric("Total Pago", f"R$ {lead_m['pago']:,.0f}")
+l3.metric("Saldo a Pagar", f"R$ {lead_m['saldo']:,.0f}")
+l4.metric("Ticket Médio", f"R$ {lead_m['ticket']:,.0f}")
+
+# Espaçador fino entre as linhas
+st.markdown("<div style='margin: 10px 0;'></div>", unsafe_allow_html=True)
+
+# LINHA 2: KALIL (Roxo)
+st.markdown("<p style='margin-bottom: -10px; color: #A05195; font-weight: bold; font-size: 0.9rem;'>PERFORMANCE KALIL</p>", unsafe_allow_html=True)
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Faturamento", f"R$ {kalil_m['fat']:,.0f}")
+k2.metric("Total Pago", f"R$ {kalil_m['pago']:,.0f}")
+k3.metric("Saldo a Pagar", f"R$ {kalil_m['saldo']:,.0f}")
+k4.metric("Ticket Médio", f"R$ {kalil_m['ticket']:,.0f}")
 
 st.markdown("---")
 
