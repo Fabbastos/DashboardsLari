@@ -3,172 +3,111 @@ import pandas as pd
 import plotly.express as px
 
 # 1. Configuração da Página
-st.set_page_config(page_title="CRM Vendas Premium", layout="wide", page_icon="📊")
+st.set_page_config(page_title="CRM Premium", layout="wide", page_icon="📊")
 
-# --- Estilização Corrigida (Contraste e Fontes) ---
+# --- Estilização CSS para Contraste e Espaçamento ---
 st.markdown("""
     <style>
-    /* Força o texto para uma cor legível (evita o bug do dark mode do Streamlit) */
-    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    /* Reset de cores para texto claro em fundo escuro */
+    .stApp { background-color: #0F172A; color: #FFFFFF; }
     
-    .stMetric label { font-size: 1.2rem !important; font-weight: bold !important; color: #2c3e50 !important; }
-    .stMetric div[data-testid="stMetricValue"] { font-size: 2.0rem !important; font-weight: bold !important; color: #bb463c !important; }
+    /* Forçar todos os textos de Markdown, labels e títulos para Branco */
+    h1, h2, h3, p, span, label { color: #FFFFFF !important; }
     
-    /* Relatório IA - Fundo claro com texto escuro OBRIGATÓRIO */
-    .ia-report { 
-        background-color: #e3f2fd !important; 
-        color: #1e1e1e !important; /* Garante que o texto será escuro */
-        border-left: 5px solid #2196f3; 
-        padding: 20px; 
-        border-radius: 8px; 
-        font-size: 1.15rem; 
+    /* Remover espaços inúteis no topo */
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 0rem !important; }
+    
+    /* Estilo dos Cards de Métricas */
+    div[data-testid="stMetric"] {
+        background-color: #1E293B;
+        padding: 5px 15px;
+        border-radius: 8px;
+        border: 1px solid #334155;
     }
-    .ia-report h3 { color: #0d47a1 !important; margin-top: 0; }
+    div[data-testid="stMetricLabel"] { color: #94A3B8 !important; font-size: 0.85rem !important; }
+    div[data-testid="stMetricValue"] { color: #5BC0EB !important; font-size: 1.5rem !important; }
+
+    /* Estilização da Tabela (Fundo escuro e texto claro) */
+    .stDataFrame div { color: #FFFFFF !important; }
+
+    /* Ocultar elementos desnecessários */
+    #MainMenu, footer, header { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Sidebar - Gestão de Dados
-st.sidebar.header("📁 Gestão de Dados")
-uploaded_file = st.sidebar.file_uploader("Carregue seu arquivo CSV", type=["csv"])
-
-st.sidebar.markdown("---")
-st.sidebar.header("🎯 Funil de Vendas")
-total_leads = st.sidebar.number_input("Total de Leads (Contatos)", min_value=1, value=40)
-
-# Função para carregar os dados
+# 2. Dados (Otimizados para o exemplo)
 def load_data():
-    columns = [
-        'Cliente', 'Indicador', 'Categoria', 'Valor', 'Entrada', 
-        'Idade', 'Segundo_Pagto', 'Data', 'País', 'Indicação_Kalil',
-        'Doc enviado', 'Doc Recebido', 'Comissão Larissa', 'telefone'
+    columns = ['Cliente', 'Indicador', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto']
+    data = [
+        ['Ana Silva', 'Instagram', 'ID-DEFINITIVO', 5000, 2500, '20-25', 1000],
+        ['Bruno Costa', 'Kalil', 'TRC PROVISÓRIO', 1500, 500, '30-35', 0],
+        ['Carla Souza', 'Google', 'AE TODAS', 4500, 4500, '40-45', 0],
+        ['Diego Lima', 'Kalil', 'AB CARRO', 8000, 4000, '30-35', 2000],
+        ['Erik Rocha', 'Instagram', 'Carta AE', 6000, 3000, '25-30', 1000],
+        ['Fernanda Luz', 'Google', 'Renov. CNH', 1200, 1200, '50-55', 0],
     ]
-    
-    if uploaded_file is not None:
-        return pd.read_csv(uploaded_file)
-    else:
-        # Dados padrão
-        data = [
-            ['Ana Silva', 'Instagram', 'ID-DEFINITIVO', 5000, 2500, '20-25 anos', 1000, '2026-04-10', 'Brasil', 'Não', 'Ok', 'Ok', 'Ok', '5511999999999'],
-            ['Bruno Costa', 'Kalil', 'TRC PROVISÓRIO', 1500, 500, '30-35 anos', 0, '2026-04-10', 'Portugal', 'Sim', 'Ok', '', 'Ok', '351910000000'],
-            ['Carla Souza', 'Google', 'AE TODAS AS CATEGORIAS', 4500, 4500, '40-45 anos', 0, '2026-04-11', 'Brasil', 'Não', '', '', '', '5521988888888'],
-            ['Diego Lima', 'Kalil', 'AB CARRO E MOTO', 8000, 4000, '30-35 anos', 2000, '2026-04-11', 'Angola', 'Sim', 'Ok', 'Ok', '', '244910000000'],
-            ['Erik Rocha', 'Instagram', 'Carta AE polonia', 6000, 3000, '25-30 anos', 1000, '2026-04-12', 'Brasil', 'Não', 'Ok', 'Ok', 'Ok', '5511977777777'],
-            ['Fernanda Luz', 'Google', 'Renov. CNH', 1200, 1200, '50-55 anos', 0, '2026-04-12', 'Portugal', 'Não', 'Ok', 'Ok', '', '351920000000'],
-        ]
-        return pd.DataFrame(data, columns=columns)
+    return pd.DataFrame(data, columns=columns)
 
 df = load_data()
-
-# 3. Tratamento de Dados
-numeric_cols = ['Valor', 'Entrada', 'Segundo_Pagto']
-for col in numeric_cols:
-    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-
-# Cálculos Chave
-df['Saldo'] = df['Valor'] - (df['Entrada'] + df['Segundo_Pagto'])
 df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
+df['Saldo'] = df['Valor'] - df['Total Pago']
 
-status_cols = ['Doc enviado', 'Doc Recebido', 'Comissão Larissa']
-for col in status_cols:
-    df[col] = df[col].fillna('').astype(str).replace({'nan': ''})
+# 3. Cabeçalho e Métricas (Linha Única)
+st.subheader("📊 Executive CRM Dashboard")
+m1, m2, m3, m4, m5, m6 = st.columns(6)
+m1.metric("Faturamento", f"R$ {df['Valor'].sum():,.0f}")
+m2.metric("Recebido", f"R$ {df['Total Pago'].sum():,.0f}")
+m3.metric("Saldo", f"R$ {df['Saldo'].sum():,.0f}")
+m4.metric("Vendas", len(df))
+m5.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.0f}")
+m6.metric("LTV", "R$ 4.2k")
 
-total_vendas_count = len(df)
-total_pago = df['Total Pago'].sum()
-taxa_conversao = (total_vendas_count / total_leads) * 100
+# 4. Grid de Gráficos (Altura reduzida para 180px)
+cores = ["#A05195", "#F9B24D", "#2F5D8C", "#5BC0EB", "#665191"]
+chart_height = 180
 
-# 4. Interface Principal
-st.title("📊 CRM Dashboard | Gestão Kalil")
-st.markdown("---")
-
-# 5. Métricas em Duas Linhas
-st.markdown("### 📈 Resumo Analítico")
-m_row1_1, m_row1_2, m_row1_3 = st.columns(3)
-m_row2_1, m_row2_2, m_row2_3 = st.columns(3)
-
-with m_row1_1:
-    st.metric("Faturamento Total", f"R$ {df['Valor'].sum():,.2f}")
-with m_row1_2:
-    st.metric("Total Pago", f"R$ {total_pago:,.2f}")
-with m_row1_3:
-    st.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
-
-with m_row2_1:
-    st.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
-with m_row2_2:
-    st.metric("Conversão", f"{taxa_conversao:.1f}%")
-with m_row2_3:
-    top_idade = df.groupby('Idade')['Cliente'].count().idxmax() if not df.empty else "N/A"
-    st.metric("Público Alvo", top_idade)
-
-st.markdown("---")
-
-# 6. Relatório de Insights (Cores Legíveis)
-st.markdown("### 🤖 Gerador de Insights Estratégicos")
-if st.button("Gerar Relatório Completo"):
-    top_cat = df.groupby('Categoria')['Valor'].sum().idxmax() if not df.empty else "N/A"
-    top_indicador = df.groupby('Indicador')['Valor'].sum().idxmax() if not df.empty else "N/A"
-    faturamento = df['Valor'].sum()
-    leads_necessarios = int(total_leads * 1.5)
-    saldo_receber = df['Saldo'].sum()
-    
-    report_text = f"""
-    ### Análise Executiva:
-    O faturamento total alcançou **R$ {faturamento:,.2f}**, impulsionado pela categoria **{top_cat}**. O canal **{top_indicador}** foi o mais lucrativo, exigindo atenção especial.
-
-    ### Performance do Funil:
-    Sua conversão está em **{taxa_conversao:.1f}%**. Para dobrar seu faturamento atual, mantendo essa eficiência, você precisará captar aproximadamente **{leads_necessarios} leads**.
-
-    ### Saúde Financeira:
-    O saldo a receber é de **R$ {saldo_receber:,.2f}**. Isso representa um risco de inadimplência caso não haja cobrança ativa para os pagamentos da segunda parcela.
-    """
-    st.markdown(f'<div class="ia-report">{report_text}</div>', unsafe_allow_html=True)
-
-st.markdown("---")
-
-# 7. Grid de Gráficos 2x2 (Tamanhos Reduzidos para Caber na Tela)
-st.markdown("### 📈 Visualizações Gerenciais")
-c1, c2 = st.columns(2)
-c3, c4 = st.columns(2)
-
-altura_graficos = 320 # Reduzindo a altura para ficar mais compacto
+c1, c2, c3 = st.columns([1.2, 1, 1]) # Proporções diferentes para variar o visual
 
 with c1:
-    df_funil = pd.DataFrame({"Etapa": ["Leads", "Vendas"], "Qtd": [total_leads, total_vendas_count]})
-    fig_funil = px.funnel(df_funil, x='Qtd', y='Etapa', title="Funil de Conversão")
-    fig_funil.update_traces(marker=dict(color=["#e74c3c", "#27ae60"]))
-    fig_funil.update_layout(height=altura_graficos, margin=dict(l=10, r=10, t=40, b=10))
-    st.plotly_chart(fig_funil, use_container_width=True)
-
-with c2:
-    fig_origem = px.bar(df.groupby("Indicador")["Valor"].sum().reset_index().sort_values("Valor"),
-                        x="Valor", y="Indicador", orientation='h', title="Faturamento por Canal",
-                        text_auto='.2s', color="Indicador",
-                        color_discrete_sequence=px.colors.qualitative.Antique)
-    fig_origem.update_layout(height=altura_graficos, margin=dict(l=10, r=10, t=40, b=10), showlegend=False)
+    # Gráfico de Barras Horizontal (Canais)
+    fig_origem = px.bar(df.groupby("Indicador")["Valor"].sum().reset_index(), 
+                        x="Valor", y="Indicador", orientation='h', 
+                        title="Vendas por Canal", color_discrete_sequence=[cores[3]])
+    fig_origem.update_layout(height=chart_height, margin=dict(l=10, r=10, t=30, b=10), 
+                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
+                             font=dict(color="white", size=10), title_font_size=12)
     st.plotly_chart(fig_origem, use_container_width=True)
 
-with c3:
-    fig_cat = px.bar(df.groupby("Categoria")["Valor"].sum().reset_index().sort_values("Valor"),
-                     x="Categoria", y="Valor", title="Faturamento por Categoria",
-                     color="Categoria", color_discrete_sequence=px.colors.qualitative.Bold)
-    fig_cat.update_layout(height=altura_graficos, margin=dict(l=10, r=10, t=40, b=10), showlegend=False)
+with c2:
+    # Gráfico de Rosca (Categorias)
+    fig_cat = px.pie(df, values='Valor', names='Categoria', hole=.5, title="Mix de Produtos")
+    fig_cat.update_traces(marker=dict(colors=cores))
+    fig_cat.update_layout(height=chart_height, margin=dict(l=10, r=10, t=30, b=10), 
+                          paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white", size=10), 
+                          showlegend=False, title_font_size=12)
     st.plotly_chart(fig_cat, use_container_width=True)
 
-with c4:
-    fig_idade = px.bar(df.groupby("Idade")["Valor"].sum().reset_index().sort_values("Valor"),
-                       x="Idade", y="Valor", title="Faturamento por Faixa Etária",
-                       color="Idade", color_discrete_sequence=px.colors.qualitative.Pastel)
-    fig_idade.update_layout(height=altura_graficos, margin=dict(l=10, r=10, t=40, b=10), showlegend=False)
+with c3:
+    # Gráfico de Barras (Idade)
+    fig_idade = px.bar(df.groupby("Idade")["Valor"].sum().reset_index(), 
+                       x="Idade", y="Valor", title="Faturamento por Idade")
+    fig_idade.update_traces(marker_color=cores[0])
+    fig_idade.update_layout(height=chart_height, margin=dict(l=10, r=10, t=30, b=10), 
+                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
+                            font=dict(color="white", size=10), title_font_size=12)
     st.plotly_chart(fig_idade, use_container_width=True)
 
-# 8. Tabela com Status
-st.markdown("### 📋 Detalhamento e Status")
-
-def color_ok(val):
-    return 'background-color: #d4edda; color: #155724;' if val == 'Ok' else '' # Verde mais forte para leitura
-
+# 5. Tabela de Dados (Altura fixa para evitar scroll da página)
+st.markdown("### 📋 Detalhamento de Operações")
 st.dataframe(
-    df.style.map(color_ok, subset=['Doc enviado', 'Doc Recebido', 'Comissão Larissa'])
-            .format({'Valor': 'R$ {:.2f}', 'Saldo': 'R$ {:.2f}', 'Entrada': 'R$ {:.2f}', 'Segundo_Pagto': 'R$ {:.2f}', 'Total Pago': 'R$ {:.2f}'}),
-    use_container_width=True
+    df[['Cliente', 'Categoria', 'Valor', 'Saldo', 'Indicador']].style.set_properties(**{
+        'background-color': '#1E293B',
+        'color': 'white',
+        'border-color': '#334155'
+    }), 
+    use_container_width=True, 
+    height=160 # Altura pequena para caber na tela
 )
+
+# Instrução lateral
+st.sidebar.info("Pressione **Ctrl + P** e escolha 'Paisagem' para salvar o PDF em uma única folha A4.")
