@@ -5,7 +5,7 @@ import plotly.express as px
 # 1. Configuração da Página
 st.set_page_config(page_title="CRM Vendas Premium", layout="wide", page_icon="📊")
 
-# Estilização básica para manter o tom "Premium"
+# Estilização para o tom "Premium"
 st.markdown("""
     <style>
     .main { background-color: #f5f5f5; }
@@ -13,13 +13,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Sidebar - Importação e Configurações de Leads
+# 2. Sidebar - Gestão de Dados
 st.sidebar.header("📁 Gestão de Dados")
 uploaded_file = st.sidebar.file_uploader("Carregue seu arquivo CSV", type=["csv"])
 
 st.sidebar.markdown("---")
 st.sidebar.header("🎯 Funil de Vendas")
-# Input para cálculo da Taxa de Conversão
 total_leads = st.sidebar.number_input("Total de Leads (Contatos)", min_value=1, value=40)
 
 # Função para carregar os dados
@@ -33,12 +32,14 @@ def load_data():
     if uploaded_file is not None:
         return pd.read_csv(uploaded_file)
     else:
-        # Dados padrão (Exemplo)
+        # Dados padrão com as SUAS CATEGORIAS REAIS
         data = [
-            ['Ana Silva', 'Instagram', 'VIP', 5000, 2500, '20-25 anos', 1000, '2026-04-10', 'Brasil', 'Não', 'Ok', 'Ok', 'Ok', '5511999999999'],
-            ['Bruno Costa', 'Kalil', 'Standard', 1500, 500, '30-35 anos', 0, '2026-04-10', 'Portugal', 'Sim', 'Ok', '', 'Ok', '351910000000'],
-            ['Carla Souza', 'Google', 'Premium', 4500, 4500, '40-45 anos', 0, '2026-04-11', 'Brasil', 'Não', '', '', '', '5521988888888'],
-            ['Diego Lima', 'Kalil', 'VIP', 8000, 4000, '30-35 anos', 2000, '2026-04-11', 'Angola', 'Sim', 'Ok', 'Ok', '', '244910000000'],
+            ['Ana Silva', 'Instagram', 'ID-DEFINITIVO', 5000, 2500, '20-25 anos', 1000, '2026-04-10', 'Brasil', 'Não', 'Ok', 'Ok', 'Ok', '5511999999999'],
+            ['Bruno Costa', 'Kalil', 'TRC PROVISÓRIO', 1500, 500, '30-35 anos', 0, '2026-04-10', 'Portugal', 'Sim', 'Ok', '', 'Ok', '351910000000'],
+            ['Carla Souza', 'Google', 'AE TODAS AS CATEGORIAS', 4500, 4500, '40-45 anos', 0, '2026-04-11', 'Brasil', 'Não', '', '', '', '5521988888888'],
+            ['Diego Lima', 'Kalil', 'AB CARRO E MOTO', 8000, 4000, '30-35 anos', 2000, '2026-04-11', 'Angola', 'Sim', 'Ok', 'Ok', '', '244910000000'],
+            ['Erik Rocha', 'Instagram', 'Carta AE polonia', 6000, 3000, '25-30 anos', 1000, '2026-04-12', 'Brasil', 'Não', 'Ok', 'Ok', 'Ok', '5511977777777'],
+            ['Fernanda Luz', 'Google', 'Renov. CNH', 1200, 1200, '50-55 anos', 0, '2026-04-12', 'Portugal', 'Não', 'Ok', 'Ok', '', '351920000000'],
         ]
         return pd.DataFrame(data, columns=columns)
 
@@ -51,7 +52,6 @@ for col in numeric_cols:
 
 df['Saldo'] = df['Valor'] - (df['Entrada'] + df['Segundo_Pagto'])
 
-# Limpeza de strings para colunas de status
 status_cols = ['Doc enviado', 'Doc Recebido', 'Comissão Larissa']
 for col in status_cols:
     df[col] = df[col].fillna('').astype(str).replace({'nan': ''})
@@ -61,86 +61,66 @@ taxa_conversao = (total_vendas_count / total_leads) * 100
 
 # 4. Interface Principal
 st.title("📊 CRM Dashboard | Gestão Kalil")
-if not uploaded_file:
-    st.info("💡 Exibindo dados de exemplo. Carregue seu CSV para atualizar os gráficos.")
-
 st.markdown("---")
 
-# 5. Métricas Principais (Divididas em duas linhas para não cortar o texto)
+# 5. Métricas em Duas Linhas (Para evitar o corte do texto/número)
 st.markdown("### 📊 Resumo Executivo")
-row1_1, row1_2, row1_3 = st.columns(3)
-row2_1, row2_2 = st.columns(2)
+m_row1_1, m_row1_2, m_row1_3 = st.columns(3)
+m_row2_1, m_row2_2 = st.columns(2)
 
-# Linha 1: Financeiro
-row1_1.metric("Volume de Vendas", f"R$ {df['Valor'].sum():,.2f}")
-row1_2.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
-row1_3.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
+with m_row1_1:
+    st.metric("Volume de Vendas", f"R$ {df['Valor'].sum():,.2f}")
+with m_row1_2:
+    st.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
+with m_row1_3:
+    st.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
 
-# Linha 2: Performance
-row2_1.metric("Vendas Fechadas", f"{total_vendas_count} unidades")
-row2_2.metric("Taxa de Conversão", f"{taxa_conversao:.1f}%")
+with m_row2_1:
+    st.metric("Vendas Fechadas", f"{total_vendas_count} unid.")
+with m_row2_2:
+    st.metric("Taxa de Conversão", f"{taxa_conversao:.1f}%")
 
 st.markdown("---")
 
-# 6. Relatório de Insights (IA Simulação)
+# 6. Relatório de Insights
 st.markdown("### 🤖 Insights de Performance")
 if st.button("Gerar Relatório Analítico"):
     faturamento = df['Valor'].sum()
-    leads_necessarios = int(total_leads * 1.5)
-    
-    st.success(f"""
-    * **Análise de Conversão:** Sua taxa atual é de **{taxa_conversao:.1f}%**. Para dobrar o faturamento, mantendo essa taxa, você precisaria de aproximadamente **{leads_necessarios} leads**.
-    * **Pendências Financeiras:** O valor de **R$ {df['Saldo'].sum():,.2f}** em aberto representa um risco de inadimplência. Foco no recebimento do 'Segundo Pagamento'.
-    * **Documentação:** Apenas {len(df[df['Doc Recebido'] == 'Ok'])} de {len(df)} clientes estão com o processo 100% concluído.
-    """)
+    top_cat = df.groupby('Categoria')['Valor'].sum().idxmax()
+    st.success(f"**Insight:** A categoria com maior faturamento é **{top_cat}**. Sua conversão de **{taxa_conversao:.1f}%** indica que para cada 10 leads, você fecha aproximadamente {int(taxa_conversao/10)} venda(s).")
 
-# 7. GRID DE GRÁFICOS (4 Gráficos Relevantes)
+# 7. Grid de Gráficos 2x2
 st.markdown("### 📈 Visualizações Gerenciais")
+c1, c2 = st.columns(2)
+c3, c4 = st.columns(2)
 
-fila1_col1, fila1_col2 = st.columns(2)
-fila2_col1, fila2_col2 = st.columns(2)
-
-# --- GRÁFICO 1: Funil de Vendas ---
-with fila1_col1:
-    df_funil = pd.DataFrame({
-        "Etapa": ["Leads", "Vendas"],
-        "Qtd": [total_leads, total_vendas_count]
-    })
-    fig_funil = px.funnel(df_funil, x='Qtd', y='Etapa', title="Funil: Leads vs Fechamento", 
-                          color_discrete_sequence=["#2c3e50"])
+with c1:
+    # Funil
+    fig_funil = px.funnel(pd.DataFrame({"Etapa": ["Leads", "Vendas"], "Qtd": [total_leads, total_vendas_count]}), 
+                          x='Qtd', y='Etapa', title="Funil de Vendas", color_discrete_sequence=["#2c3e50"])
     st.plotly_chart(fig_funil, use_container_width=True)
 
-# --- GRÁFICO 2: Faturamento por Indicador (Origem) ---
-with fila1_col2:
-    fig_origem = px.bar(
-        df.groupby("Indicador")["Valor"].sum().reset_index().sort_values("Valor"),
-        x="Valor", y="Indicador", orientation='h',
-        title="Faturamento por Canal de Origem",
-        text_auto='.2s', color_discrete_sequence=["#bb463c"]
-    )
+with c2:
+    # Faturamento por Indicador
+    fig_origem = px.bar(df.groupby("Indicador")["Valor"].sum().reset_index().sort_values("Valor"),
+                        x="Valor", y="Indicador", orientation='h', title="Faturamento por Canal",
+                        text_auto='.2s', color_discrete_sequence=["#bb463c"])
     st.plotly_chart(fig_origem, use_container_width=True)
 
-# --- GRÁFICO 3: Ticket Médio por Categoria ---
-with fila2_col1:
-    fig_ticket = px.bar(
-        df.groupby("Categoria")["Valor"].mean().reset_index(),
-        x="Categoria", y="Valor",
-        title="Ticket Médio por Categoria",
-        color="Categoria", color_discrete_sequence=px.colors.qualitative.Safe
-    )
-    st.plotly_chart(fig_ticket, use_container_width=True)
+with c3:
+    # Faturamento por Categoria (As suas categorias reais)
+    fig_cat = px.bar(df.groupby("Categoria")["Valor"].sum().reset_index().sort_values("Valor"),
+                     x="Categoria", y="Valor", title="Faturamento por Categoria",
+                     color="Categoria", color_discrete_sequence=px.colors.qualitative.Prism)
+    st.plotly_chart(fig_cat, use_container_width=True)
 
-# --- GRÁFICO 4: Distribuição por País ---
-with fila2_col2:
-    fig_pais = px.pie(
-        df, names='País', values='Valor',
-        title="Participação de Vendas por País",
-        hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu
-    )
+with c4:
+    # Participação por País
+    fig_pais = px.pie(df, names='País', values='Valor', title="Vendas por País", hole=0.4)
     st.plotly_chart(fig_pais, use_container_width=True)
 
-# 8. Tabela com Status (Correção do applymap para map)
-st.markdown("### 📋 Detalhamento dos Clientes e Status")
+# 8. Tabela com Status (Corrigida)
+st.markdown("### 📋 Detalhamento e Status")
 
 def color_ok(val):
     return 'background-color: #d4edda' if val == 'Ok' else ''
