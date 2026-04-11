@@ -21,7 +21,7 @@ st.markdown(f"""
     .main-title {{ 
         font-size: 1.2rem !important; 
         font-weight: bold; 
-        margin: 0px 0px 10px 0px !important; 
+        margin: 10px 0px !important; 
         color: white;
     }}
     
@@ -49,10 +49,13 @@ st.markdown(f"""
 
     hr {{ margin: 8px 0px !important; opacity: 0.1; }}
     [data-testid="column"] {{ padding: 0px 5px !important; }}
+
+    /* Ajuste fino do seletor para não ficar gigante */
+    div[data-testid="stSelectbox"] {{ margin-top: -10px; }}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Dados (Com coluna de Mês adicionada)
+# 2. Dados
 def load_data():
     columns = ['Cliente', 'Canal', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto', 'País', 'Mês']
     data = [
@@ -95,15 +98,17 @@ def load_data():
 
 df_base = load_data()
 
-# --- FILTRO NA SIDEBAR ---
-with st.sidebar:
-    st.markdown("### Filtros")
-    mes_filtro = st.selectbox("Selecionar Período", ["Total", "Janeiro", "Fevereiro", "Março"])
+# --- CABEÇALHO COM TÍTULO E SELETOR ---
+head_col1, head_col2 = st.columns([4, 1])
 
-if mes_filtro == "Total":
-    df = df_base
-else:
-    df = df_base[df_base['Mês'] == mes_filtro]
+with head_col1:
+    st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
+
+with head_col2:
+    mes_filtro = st.selectbox("", ["Total", "Janeiro", "Fevereiro", "Março"], label_visibility="collapsed")
+
+# Lógica de Filtro
+df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
 
 def aplicar_estilo_dashboard(fig):
     fig.update_layout(
@@ -118,9 +123,7 @@ def aplicar_estilo_dashboard(fig):
     fig.update_traces(textfont_color="white") 
     return fig
 
-# 3. Layout Principal
-st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
-
+# 3. Métricas
 def render_metrics(channel, color):
     subset = df[df['Canal'] == channel]
     st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
@@ -139,7 +142,6 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # --- GRÁFICOS ---
 c1, c2, c3 = st.columns(3)
 with c1:
-    # Ajustando funil proporcional ao filtro (simulação)
     fator = 1 if mes_filtro == "Total" else 0.4
     df_funil = pd.DataFrame({
         'Etapa': ['Contatos', 'Clientes', 'Contatos', 'Clientes'], 
