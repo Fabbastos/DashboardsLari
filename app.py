@@ -81,7 +81,6 @@ def aplicar_estilo_dashboard(fig):
     )
     fig.update_xaxes(title="", gridcolor='#1E293B', tickfont=dict(size=10))
     fig.update_yaxes(title="", gridcolor='#1E293B', tickfont=dict(size=10))
-    # Garante que textos dentro de barras/funis sejam brancos
     fig.update_traces(textfont_color="white") 
     return fig
 
@@ -127,27 +126,31 @@ with c1:
         'Qtd': [40, 4, 12, 2]
     })
     fig1 = px.funnel(df_funil, x='Qtd', y='Etapa', color='Canal', title="Conversão", color_discrete_map=PALETA_MAP)
-    # Forçando texto branco especificamente no funil
     fig1.update_traces(textinfo="value", textfont=dict(color="white", size=12))
     st.plotly_chart(aplicar_estilo_dashboard(fig1), use_container_width=True)
 
 with c2:
-    fig2 = px.bar(df.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Produtos", color_discrete_sequence=[COLOR_LEAD])
+    fig2 = px.bar(df.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Produtos (R$)", color_discrete_sequence=[COLOR_LEAD])
     st.plotly_chart(aplicar_estilo_dashboard(fig2), use_container_width=True)
 
 with c3:
-    fig3 = px.bar(df.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Idade", color_discrete_map=PALETA_MAP)
+    # NOVO: Quantidade de clientes por idade
+    df_idade_qtd = df.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd')
+    fig3 = px.bar(df_idade_qtd, x="Idade", y="Qtd", color="Canal", barmode='group', title="Qtd. Clientes por Idade", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig3), use_container_width=True)
 
 c4, c5, c6 = st.columns(3)
 with c4:
-    fig4 = px.bar(df.groupby(["País", "Canal"])["Valor"].sum().reset_index(), x="País", y="Valor", color="Canal", title="Geográfico", color_discrete_map=PALETA_MAP)
+    # ALTERADO: Quantidade de cliente por país
+    df_pais_qtd = df.groupby(["País", "Canal"]).size().reset_index(name='Qtd')
+    fig4 = px.bar(df_pais_qtd, x="País", y="Qtd", color="Canal", barmode='group', title="Qtd. Clientes por País", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig4), use_container_width=True)
 
 with c5:
-    fig5 = px.bar(df.groupby(["Doc_Status", "Canal"])["Valor"].count().reset_index(), x="Valor", y="Doc_Status", color="Canal", orientation='h', title="Status Docs", color_discrete_map=PALETA_MAP)
+    # ALTERADO: Faturamento de clientes por idade
+    fig5 = px.bar(df.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig5), use_container_width=True)
 
 with c6:
-    fig6 = px.bar(df[df['Saldo'] > 0], x="Cliente", y="Saldo", color="Canal", title="Inadimplência", color_discrete_map=PALETA_MAP)
+    fig6 = px.bar(df[df['Saldo'] > 0], x="Cliente", y="Saldo", color="Canal", title="Saldo Devedor por Cliente", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig6), use_container_width=True)
