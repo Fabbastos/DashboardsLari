@@ -9,23 +9,37 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO E DESIGN ---
+# --- CSS RESPONSIVO E CORREÇÃO DE CORES MOBILE ---
 st.markdown(f"""
     <style>
+    /* Fundo e Container */
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.2rem 1rem 5rem 1rem !important; }}
+    
+    /* Forçar cor branca em todo o texto para evitar letras escuras no mobile */
+    * {{ color: #FFFFFF !important; }}
+    
     header {{ visibility: hidden; height: 0px; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
     
-    .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; color: white; }}
+    .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    div[data-testid="stMetric"] {{ background-color: #1E293B; padding: 2px 10px !important; border: 1px solid #334155; height: 50px !important; }}
+    /* Cards de Métricas */
+    div[data-testid="stMetric"] {{ 
+        background-color: #1E293B; 
+        padding: 2px 10px !important; 
+        border: 1px solid #334155; 
+        height: 55px !important; 
+    }}
     div[data-testid="stMetricLabel"] {{ font-size: 0.72rem !important; color: #CBD5E1 !important; margin-bottom: -15px; }}
-    div[data-testid="stMetricValue"] {{ font-size: 1.0rem !important; font-weight: bold; color: white !important; }}
+    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
 
-    hr {{ margin: 8px 0px !important; opacity: 0.1; }}
+    /* Estilização do Selectbox para visibilidade no mobile */
+    div[data-baseweb="select"] {{ background-color: #1E293B !important; border-radius: 5px; }}
+    
+    hr {{ margin: 8px 0px !important; opacity: 0.2; border-color: #FFFFFF; }}
     div[data-testid="stSelectbox"] {{ margin-top: -10px; }}
 
     /* RESPONSIVIDADE PARA CELULAR */
@@ -34,14 +48,15 @@ st.markdown(f"""
             width: 100% !important;
             flex: 1 1 100% !important;
             min-width: 100% !important;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }}
-        div[data-testid="stMetric"] {{ height: 60px !important; }}
+        div[data-testid="stMetric"] {{ height: 65px !important; }}
+        .main-title {{ font-size: 1.5rem !important; text-align: center; }}
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Dados
+# 2. Dados (Valores agora em Euro simbolicamente)
 def load_data():
     columns = ['Cliente', 'Canal', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto', 'País', 'Mês']
     data = [
@@ -71,7 +86,7 @@ def load_data():
 df_base = load_data()
 
 # --- CABEÇALHO ---
-head_col1, head_col2 = st.columns([4, 1])
+head_col1, head_col2 = st.columns([3, 1])
 with head_col1:
     st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
 with head_col2:
@@ -80,15 +95,16 @@ with head_col2:
 df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
 df_vendas = df[df['Total Pago'] > 0].copy()
 
-# --- MÉTRICAS ---
+# --- MÉTRICAS (Euro €) ---
 def render_metrics(channel, color):
     subset = df[df['Canal'] == channel]
     st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Faturamento", f"R$ {subset['Valor'].sum():,.0f}")
-    m2.metric("Pago à Vista", f"R$ {subset['Pago Vista'].sum():,.0f}")
-    m3.metric("Pago Parcelado", f"R$ {subset['Pago Parcelado'].sum():,.0f}")
-    m4.metric("Saldo Parcelado", f"R$ {subset['Saldo Parcelado'].sum():,.0f}")
+    # Formatação padrão europeu: 1.234,00 €
+    m1.metric("Faturamento", f"€ {subset['Valor'].sum():,.0f}".replace(',', '.'))
+    m2.metric("Pago à Vista", f"€ {subset['Pago Vista'].sum():,.0f}".replace(',', '.'))
+    m3.metric("Pago Parcelado", f"€ {subset['Pago Parcelado'].sum():,.0f}".replace(',', '.'))
+    m4.metric("Saldo Parcelado", f"€ {subset['Saldo Parcelado'].sum():,.0f}".replace(',', '.'))
 
 render_metrics('Lead', COLOR_LEAD)
 render_metrics('Kalil', COLOR_KALIL)
@@ -98,13 +114,13 @@ def aplicar_estilo_estatico(fig):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color=TEXT_COLOR, size=11), margin=dict(l=10, r=10, t=35, b=5), height=200,
-        hovermode=False, # Desativa o hover no layout
+        hovermode=False,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
-    fig.update_traces(hoverinfo='none', textfont_color="white") # Remove info de passagem de mouse
+    fig.update_traces(hoverinfo='none', textfont_color="white")
     return fig
 
-# --- GRÁFICOS (Com configuração de estático) ---
+# --- GRÁFICOS (Estáticos para evitar alteração ao toque) ---
 config_estatico = {'staticPlot': True}
 
 c1, c2, c3 = st.columns(3)
@@ -119,7 +135,7 @@ with c1:
     st.plotly_chart(aplicar_estilo_estatico(fig1), use_container_width=True, config=config_estatico)
 
 with c2:
-    fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (R$)", color_discrete_sequence=[COLOR_LEAD])
+    fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
     st.plotly_chart(aplicar_estilo_estatico(fig2), use_container_width=True, config=config_estatico)
 
 with c3:
@@ -134,12 +150,12 @@ with c4:
     st.plotly_chart(aplicar_estilo_estatico(fig4), use_container_width=True, config=config_estatico)
 
 with c5:
-    fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade", color_discrete_map=PALETA_MAP)
+    fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
     fig5.update_xaxes(categoryorder='category ascending')
     st.plotly_chart(aplicar_estilo_estatico(fig5), use_container_width=True, config=config_estatico)
 
 with c6:
-    fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente", color_discrete_map=PALETA_MAP)
+    fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_estatico(fig6), use_container_width=True, config=config_estatico)
 
 st.write(""); st.write("")
