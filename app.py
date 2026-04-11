@@ -122,7 +122,7 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # --- GRÁFICOS (Layout 3x2) ---
 c1, c2, c3 = st.columns(3)
 with c1:
-    fig1 = px.funnel(pd.DataFrame({'Etapa':['Contatos','Vendas','Contatos','Vendas'],'Canal':['Lead','Lead','Kalil','Kalil'],'Qtd':[40,4,12,2]}), 
+    fig1 = px.funnel(pd.DataFrame({'Etapa':['Contatos','Clientes','Contatos','Vendas'],'Canal':['Lead','Lead','Kalil','Kalil'],'Qtd':[40,4,12,2]}), 
                      x='Qtd', y='Etapa', color='Canal', title="Conversão", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig1), use_container_width=True)
 with c2:
