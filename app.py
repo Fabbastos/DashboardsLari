@@ -11,21 +11,29 @@ COLOR_KALIL = "#A05195" # Roxo
 TEXT_COLOR = "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS: Estilização da Interface ---
+# --- CSS: Otimização Extrema de Espaço ---
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: #0F172A; color: {TEXT_COLOR}; }}
-    .block-container {{ padding-top: 1rem !important; }}
+    /* Remove margens do container principal */
+    .block-container {{ 
+        padding-top: 0.5rem !important; 
+        padding-bottom: 0rem !important; 
+        padding-left: 1rem !important; 
+        padding-right: 1rem !important; 
+    }}
+    /* Reduz a altura dos cards de métricas */
     div[data-testid="stMetric"] {{
         background-color: #1E293B;
-        padding: 10px;
+        padding: 5px 10px !important;
         border-radius: 8px;
         border: 1px solid #334155;
     }}
-    div[data-testid="stMetricLabel"] {{ color: #CBD5E1 !important; }}
-    div[data-testid="stMetricValue"] {{ color: {TEXT_COLOR} !important; }}
+    /* Esconde o cabeçalho padrão do Streamlit para ganhar espaço */
+    header {{ visibility: hidden; height: 0px; }}
     </style>
     """, unsafe_allow_html=True)
+
+
 
 # 2. Dados
 def load_data():
@@ -45,19 +53,18 @@ df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
 df['Saldo'] = df['Valor'] - df['Total Pago']
 chart_height = 260
 
-# 3. Função de Estilo (Forçando Fonte Clara)
+# --- Ajuste na Função de Estilo ---
 def aplicar_estilo_dark(fig):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        # Força cor branca em todos os textos globais
-        font=dict(color=TEXT_COLOR, size=12),
-        title_font=dict(color=TEXT_COLOR, size=16, family="Arial Black"),
-        margin=dict(l=10, r=10, t=50, b=10),
-        height=chart_height,
-        # Legenda branca
+        font=dict(color=TEXT_COLOR, size=11), # Fonte levemente menor
+        title_font=dict(color=TEXT_COLOR, size=14, family="Arial Black"),
+        # Margens negativas ou zero para aproveitar cada pixel
+        margin=dict(l=5, r=5, t=35, b=5), 
+        height=220, # Reduzi de 260 para 220 para caber na tela
         legend=dict(
-            font=dict(color=TEXT_COLOR),
+            font=dict(size=10),
             orientation="h", 
             yanchor="bottom", 
             y=1.02, 
@@ -65,19 +72,9 @@ def aplicar_estilo_dark(fig):
             x=1
         )
     )
-    # Eixos com fonte branca nítida
-    fig.update_xaxes(
-        gridcolor='#1E293B', 
-        tickfont=dict(color=TEXT_COLOR), 
-        title_font=dict(color=TEXT_COLOR)
-    )
-    fig.update_yaxes(
-        gridcolor='#1E293B', 
-        tickfont=dict(color=TEXT_COLOR), 
-        title_font=dict(color=TEXT_COLOR)
-    )
-    # Força os rótulos de dados (se houver) a serem brancos
-    fig.update_traces(textfont_color=TEXT_COLOR)
+    fig.update_xaxes(gridcolor='#1E293B', tickfont=dict(size=10))
+    fig.update_yaxes(gridcolor='#1E293B', tickfont=dict(size=10))
+    fig.update_traces(textfont_size=11)
     return fig
 
 # 4. Cabeçalho e Métricas
