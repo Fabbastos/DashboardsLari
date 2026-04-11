@@ -158,7 +158,7 @@ if not df_base.empty:
         p = subset['Pago Parcelado'].sum()
         m3.metric("Parcelado", f"€ {p:,.0f}".replace(',', '.'), delta=f"{pct(p):.0f}%")
         
-        s = subset['Saldo', f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse")
+        s = subset['Saldo', f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse"]
 
     render_metrics('Lead', COLOR_LEAD)
     render_metrics('Kalil', COLOR_KALIL)
