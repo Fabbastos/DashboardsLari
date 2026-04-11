@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO E CORREÇÃO DE CORES ---
+# --- CSS RESPONSIVO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -26,22 +26,14 @@ st.markdown(f"""
     div[data-testid="stMetricLabel"] {{ font-size: 0.72rem !important; color: #CBD5E1 !important; margin-bottom: -15px; }}
     div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
 
-    div.stButton > button {{
-        background-color: #1E293B !important;
-        border: 1px solid #334155 !important;
-        color: white !important;
-        width: 100%;
-        font-weight: bold;
-    }}
-
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 12px; }}
+        .main-title {{ text-align: center; font-size: 1.4rem !important; }}
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Conexão Direta com sua Planilha
-# Link convertido para exportação automática de CSV
+# 2. Conexão com a Planilha (Segurança: Link oculto no código)
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
 SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
@@ -51,21 +43,17 @@ def load_data():
         df = pd.read_csv(SHEET_URL)
         df.columns = [c.strip() for c in df.columns]
 
-        # Função interna para limpar moedas e converter para número
         def clean_currency(value):
             if isinstance(value, str):
-                # Remove símbolo de Euro, pontos de milhar e espaços
                 clean_val = value.replace('€', '').replace('.', '').replace(',', '.').strip()
                 return pd.to_numeric(clean_val, errors='coerce')
             return value
 
-        # Colunas que precisam ser numéricas para cálculos
         cols_financeiras = ['Valor', 'Entrada', 'Segundo_Pagto']
         for col in cols_financeiras:
             if col in df.columns:
                 df[col] = df[col].apply(clean_currency).fillna(0)
 
-        # Agora os cálculos matemáticos funcionarão sem erro de "str"
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
         
@@ -81,24 +69,20 @@ def load_data():
         
         return df
     except Exception as e:
-        st.error(f"Erro ao conectar com a planilha: {e}")
+        st.error(f"Erro na conexão de dados.")
         return pd.DataFrame()
 
 df_base = load_data()
 
 if not df_base.empty:
-    # --- CABEÇALHO ---
-    head_col1, head_col2, head_col3 = st.columns([2.5, 1.2, 1])
+    # --- CABEÇALHO (Botão removido) ---
+    head_col1, head_col2 = st.columns([4, 1])
     with head_col1:
         st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
     with head_col2:
-        st.link_button("🔗 ACESSAR PLANILHA", f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit")
-    with head_col3:
-        # Pega meses únicos da sua planilha
         meses_disponiveis = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
         mes_filtro = st.selectbox("", meses_disponiveis, label_visibility="collapsed")
 
-    # Filtros de Dados
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     df_vendas = df[df['Total Pago'] > 0].copy()
 
@@ -116,7 +100,7 @@ if not df_base.empty:
     render_metrics('Kalil', COLOR_KALIL)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- CONFIG GRÁFICOS ---
+    # --- GRÁFICOS ---
     def aplicar_estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -157,7 +141,6 @@ if not df_base.empty:
         st.plotly_chart(aplicar_estilo(fig5), use_container_width=True, config=config_est)
 
     with c6:
-        # Mostra apenas clientes com dívida pendente
         fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor (€)", color_discrete_map=PALETA_MAP)
         st.plotly_chart(aplicar_estilo(fig6), use_container_width=True, config=config_est)
 
