@@ -22,9 +22,18 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    div[data-testid="stMetric"] {{ background-color: #1E293B; padding: 2px 10px !important; border: 1px solid #334155; height: 55px !important; }}
+    /* Estilização dos Cards */
+    div[data-testid="stMetric"] {{ 
+        background-color: #1E293B; 
+        padding: 2px 10px !important; 
+        border: 1px solid #334155; 
+        height: 65px !important; 
+    }}
     div[data-testid="stMetricLabel"] {{ font-size: 0.72rem !important; color: #CBD5E1 !important; margin-bottom: -15px; }}
     div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
+    
+    /* Ajuste para o Percentual (Delta) */
+    div[data-testid="stMetricDelta"] {{ font-size: 0.8rem !important; font-weight: 400 !important; }}
 
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 12px; }}
@@ -33,7 +42,7 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Conexão com a Planilha (Segurança: Link oculto no código)
+# 2. Conexão com a Planilha
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
 SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
@@ -68,14 +77,13 @@ def load_data():
         )
         
         return df
-    except Exception as e:
-        st.error(f"Erro na conexão de dados.")
+    except:
         return pd.DataFrame()
 
 df_base = load_data()
 
 if not df_base.empty:
-    # --- CABEÇALHO (Botão removido) ---
+    # --- CABEÇALHO ---
     head_col1, head_col2 = st.columns([4, 1])
     with head_col1:
         st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
@@ -86,15 +94,32 @@ if not df_base.empty:
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- MÉTRICAS ---
+    # --- MÉTRICAS COM PERCENTUAIS ---
     def render_metrics(channel, color):
         subset = df[df['Canal'] == channel]
+        faturamento = subset['Valor'].sum()
+        
         st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Faturamento", f"€ {subset['Valor'].sum():,.0f}".replace(',', '.'))
-        m2.metric("Pago à Vista", f"€ {subset['Pago Vista'].sum():,.0f}".replace(',', '.'))
-        m3.metric("Pago Parcelado", f"€ {subset['Pago Parcelado'].sum():,.0f}".replace(',', '.'))
-        m4.metric("Saldo Parcelado", f"€ {subset['Saldo Parcelado'].sum():,.0f}".replace(',', '.'))
+        
+        # Faturamento (Base para o cálculo)
+        m1.metric("Faturamento", f"€ {faturamento:,.0f}".replace(',', '.'))
+        
+        # Cálculos de Percentual
+        def calc_pct(parte):
+            return (parte / faturamento * 100) if faturamento > 0 else 0
+
+        # Pago à Vista
+        vista = subset['Pago Vista'].sum()
+        m2.metric("Pago à Vista", f"€ {vista:,.0f}".replace(',', '.'), delta=f"{calc_pct(vista):.1f}% do total", delta_color="normal")
+        
+        # Pago Parcelado
+        parcelado = subset['Pago Parcelado'].sum()
+        m3.metric("Pago Parcelado", f"€ {parcelado:,.0f}".replace(',', '.'), delta=f"{calc_pct(parcelado):.1f}% do total", delta_color="normal")
+        
+        # Saldo Parcelado
+        saldo = subset['Saldo Parcelado'].sum()
+        m4.metric("Saldo Parcelado", f"€ {saldo:,.0f}".replace(',', '.'), delta=f"{calc_pct(saldo):.1f}% do total", delta_color="inverse")
 
     render_metrics('Lead', COLOR_LEAD)
     render_metrics('Kalil', COLOR_KALIL)
