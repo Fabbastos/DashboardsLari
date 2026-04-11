@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#8B4513", "#FFB347", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO E FIX FILTRO/TEXTOS ---
+# --- CSS RESPONSIVO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -18,7 +18,7 @@ st.markdown(f"""
     /* Força cor branca em textos HTML */
     * {{ color: {TEXT_COLOR} !important; }}
     
-    /* FIX FILTRO SELECTBOX (Para não ficar branco no mobile) */
+    /* FIX FILTRO SELECTBOX (Escuro no mobile) */
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         border: 1px solid #334155 !important;
@@ -33,7 +33,7 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* MÉTRICAS: Evita sobreposição no Mobile */
+    /* MÉTRICAS: Layout Flexível */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
         padding: 10px 12px !important; 
@@ -51,7 +51,6 @@ st.markdown(f"""
     div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; color: #CBD5E1 !important; }}
     div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
 
-    /* Mantém horizontal no PC */
     @media (min-width: 992px) {{
         div[data-testid="stMetric"] > div {{ flex-direction: row !important; gap: 10px !important; }}
         div[data-testid="stMetric"] {{ min-height: 65px !important; }}
@@ -117,12 +116,19 @@ if not df_base.empty:
     render_metrics('Kalil', COLOR_KALIL)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS (ESTILO SEGURO) ---
-    def estilo_base(fig):
+    # --- FUNÇÃO DE ESTILO ROBUSTA ---
+    def aplicar_estilo_seguro(fig):
+        # Usamos update_layout para eixos pois é mais seguro contra objetos vazios
         fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=210,
-            hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color=TEXT_COLOR, size=11), 
+            margin=dict(l=5, r=5, t=35, b=5), 
+            height=210,
+            hovermode=False, 
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            xaxis=dict(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR)),
+            yaxis=dict(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
         )
         return fig
 
@@ -136,37 +142,38 @@ if not df_base.empty:
             fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
             fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo_base(fig1), use_container_width=True, config=conf)
+        st.plotly_chart(aplicar_estilo_seguro(fig1), use_container_width=True, config=conf)
 
     with c2:
-        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix (€)", color_discrete_sequence=[COLOR_LEAD])
-        fig2.update_xaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
-        fig2.update_yaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo_base(fig2), use_container_width=True, config=conf)
+        if not df_vendas.empty:
+            fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix (€)", color_discrete_sequence=[COLOR_LEAD])
+            st.plotly_chart(aplicar_estilo_seguro(fig2), use_container_width=True, config=conf)
+        else: st.info("Sem dados")
 
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Vendas/Idade", color_discrete_map=PALETA_MAP)
-        fig3.update_xaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
-        fig3.update_yaxes(tickfont=dict(color=TEXT_COLOR), titlefont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo_base(fig3), use_container_width=True, config=conf)
+        if not df_vendas.empty:
+            fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Vendas/Idade", color_discrete_map=PALETA_MAP)
+            st.plotly_chart(aplicar_estilo_seguro(fig3), use_container_width=True, config=conf)
+        else: st.info("Sem dados")
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Países", color_discrete_map=PALETA_MAP)
-        fig4.update_xaxes(tickfont=dict(color=TEXT_COLOR))
-        fig4.update_yaxes(tickfont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo_base(fig4), use_container_width=True, config=conf)
+        if not df_vendas.empty:
+            fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Países", color_discrete_map=PALETA_MAP)
+            st.plotly_chart(aplicar_estilo_seguro(fig4), use_container_width=True, config=conf)
+        else: st.info("Sem dados")
 
     with c5:
-        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Fat./Idade", color_discrete_map=PALETA_MAP)
-        fig5.update_xaxes(tickfont=dict(color=TEXT_COLOR))
-        fig5.update_yaxes(tickfont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo_base(fig5), use_container_width=True, config=conf)
+        if not df_vendas.empty:
+            fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Fat./Idade", color_discrete_map=PALETA_MAP)
+            st.plotly_chart(aplicar_estilo_seguro(fig5), use_container_width=True, config=conf)
+        else: st.info("Sem dados")
 
     with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldos (€)", color_discrete_map=PALETA_MAP)
-        fig6.update_xaxes(tickfont=dict(color=TEXT_COLOR))
-        fig6.update_yaxes(tickfont=dict(color=TEXT_COLOR))
-        st.plotly_chart(estilo_base(fig6), use_container_width=True, config=conf)
+        saldo_df = df_vendas[df_vendas['Saldo Total'] > 0]
+        if not saldo_df.empty:
+            fig6 = px.bar(saldo_df, x="Cliente", y="Saldo Total", color="Canal", title="Saldos (€)", color_discrete_map=PALETA_MAP)
+            st.plotly_chart(aplicar_estilo_seguro(fig6), use_container_width=True, config=conf)
+        else: st.info("Sem saldos")
 
 st.write("")
