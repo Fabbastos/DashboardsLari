@@ -67,12 +67,32 @@ def load_data():
         ['Diego Lima', 'Kalil', 'AB CARRO', 8000, 4000, '31-35', 2000, 'Angola', 'Pendente'],
         ['Erik Rocha', 'Lead', 'Carta AE', 6000, 3000, '26-30', 1000, 'Brasil', 'Ok'],
         ['Fernanda Luz', 'Lead', 'Renov. CNH', 1200, 1200, '50-55', 0, 'Portugal', 'Ok'],
+        # --- Novas 20 Linhas ---
+        ['Gabriel Mendes', 'Lead', 'ID-DEFINITIVO', 5200, 5200, '20-25', 0, 'Brasil', 'Ok'],
+        ['Helena Ramos', 'Kalil', 'TRC PROV.', 1800, 900, '26-30', 400, 'Portugal', 'Pendente'],
+        ['Igor Antunes', 'Lead', 'AE TODAS', 4500, 2000, '31-35', 500, 'Angola', 'Pendente'],
+        ['Juliana Paes', 'Kalil', 'AB CARRO', 7500, 7500, '40-45', 0, 'EUA', 'Ok'],
+        ['Kevin Oliveira', 'Lead', 'Carta AE', 6000, 3000, '20-25', 0, 'Brasil', 'Pendente'],
+        ['Larissa Mano', 'Kalil', 'Renov. CNH', 1300, 650, '50-55', 100, 'Brasil', 'Ok'],
+        ['Marcos Frota', 'Lead', 'ID-DEFINITIVO', 5000, 5000, '31-35', 0, 'Portugal', 'Ok'],
+        ['Nathalia Dill', 'Kalil', 'AE TODAS', 4200, 2100, '26-30', 1000, 'Angola', 'Pendente'],
+        ['Otávio Mesca', 'Lead', 'AB CARRO', 8500, 4000, '40-45', 2000, 'Brasil', 'Ok'],
+        ['Patrícia Pillar', 'Kalil', 'Carta AE', 5800, 5800, '50-55', 0, 'EUA', 'Ok'],
+        ['Ricardo Tozzi', 'Lead', 'Renov. CNH', 1200, 1200, '20-25', 0, 'Brasil', 'Ok'],
+        ['Sabrina Sato', 'Kalil', 'ID-DEFINITIVO', 5100, 2500, '31-35', 1000, 'Portugal', 'Pendente'],
+        ['Thiago Lacerda', 'Lead', 'TRC PROV.', 1700, 1700, '40-45', 0, 'Angola', 'Ok'],
+        ['Ursula Corbero', 'Kalil', 'AE TODAS', 4600, 2300, '26-30', 0, 'EUA', 'Pendente'],
+        ['Vitor Hugo', 'Lead', 'AB CARRO', 7900, 3900, '50-55', 1000, 'Brasil', 'Ok'],
+        ['Wagner Moura', 'Kalil', 'Carta AE', 6200, 6200, '31-35', 0, 'Portugal', 'Ok'],
+        ['Xuxa Meneghel', 'Lead', 'Renov. CNH', 1250, 1250, '50-55', 0, 'Brasil', 'Ok'],
+        ['Yuri Marçal', 'Kalil', 'ID-DEFINITIVO', 5000, 1000, '20-25', 500, 'Angola', 'Pendente'],
+        ['Zeca Pagode', 'Lead', 'AE TODAS', 4400, 4400, '40-45', 0, 'Brasil', 'Ok'],
+        ['Aline Riscado', 'Kalil', 'AB CARRO', 8200, 4100, '26-30', 2000, 'EUA', 'Pendente'],
     ]
     df = pd.DataFrame(data, columns=columns)
     df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
     df['Saldo'] = df['Valor'] - df['Total Pago']
     return df
-
 df = load_data()
 
 def aplicar_estilo_dashboard(fig):
