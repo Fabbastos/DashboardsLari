@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS ULTRA COMPACTO ---
+# --- CSS RESPONSIVO E DESIGN ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -27,6 +27,17 @@ st.markdown(f"""
 
     hr {{ margin: 8px 0px !important; opacity: 0.1; }}
     div[data-testid="stSelectbox"] {{ margin-top: -10px; }}
+
+    /* RESPONSIVIDADE PARA CELULAR */
+    @media (max-width: 768px) {{
+        [data-testid="column"] {{
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+            margin-bottom: 10px;
+        }}
+        div[data-testid="stMetric"] {{ height: 60px !important; }}
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -66,9 +77,7 @@ with head_col1:
 with head_col2:
     mes_filtro = st.selectbox("", ["Total", "Janeiro", "Fevereiro", "Março"], label_visibility="collapsed")
 
-# DataFrames Filtrados
 df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
-# Apenas quem é cliente (fez pagamento) para os gráficos que não são funil
 df_vendas = df[df['Total Pago'] > 0].copy()
 
 # --- MÉTRICAS ---
@@ -85,55 +94,52 @@ render_metrics('Lead', COLOR_LEAD)
 render_metrics('Kalil', COLOR_KALIL)
 st.markdown("<hr>", unsafe_allow_html=True)
 
-def aplicar_estilo(fig):
+def aplicar_estilo_estatico(fig):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=TEXT_COLOR, size=11), margin=dict(l=10, r=10, t=35, b=5), height=190,
+        font=dict(color=TEXT_COLOR, size=11), margin=dict(l=10, r=10, t=35, b=5), height=200,
+        hovermode=False, # Desativa o hover no layout
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
-    fig.update_traces(textfont_color="white") 
+    fig.update_traces(hoverinfo='none', textfont_color="white") # Remove info de passagem de mouse
     return fig
 
-# --- GRÁFICOS ---
+# --- GRÁFICOS (Com configuração de estático) ---
+config_estatico = {'staticPlot': True}
+
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    # Funil Real (Lê todos os contatos)
     funnel_rows = []
     for canal in ["Lead", "Kalil"]:
         canal_df = df[df['Canal'] == canal]
         funnel_rows.append({'Etapa': '1. Contatos', 'Canal': canal, 'Qtd': len(canal_df)})
         funnel_rows.append({'Etapa': '2. Clientes', 'Canal': canal, 'Qtd': len(canal_df[canal_df['Total Pago'] > 0])})
-    fig1 = px.funnel(pd.DataFrame(funnel_rows), x='Qtd', y='Etapa', color='Canal', title="Funil Real (Contatos vs Vendas)", color_discrete_map=PALETA_MAP)
-    st.plotly_chart(aplicar_estilo(fig1), use_container_width=True)
+    fig1 = px.funnel(pd.DataFrame(funnel_rows), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
+    st.plotly_chart(aplicar_estilo_estatico(fig1), use_container_width=True, config=config_estatico)
 
 with c2:
-    # Gráfico Mix apenas com Clientes
     fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (R$)", color_discrete_sequence=[COLOR_LEAD])
-    st.plotly_chart(aplicar_estilo(fig2), use_container_width=True)
+    st.plotly_chart(aplicar_estilo_estatico(fig2), use_container_width=True, config=config_estatico)
 
 with c3:
-    # Qtd por Idade (Ordenado) apenas com Clientes
     fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Qtd. Vendas por Idade", color_discrete_map=PALETA_MAP)
     fig3.update_xaxes(categoryorder='category ascending')
-    st.plotly_chart(aplicar_estilo(fig3), use_container_width=True)
+    st.plotly_chart(aplicar_estilo_estatico(fig3), use_container_width=True, config=config_estatico)
 
 c4, c5, c6 = st.columns(3)
 
 with c4:
-    # Clientes por País apenas com Clientes
     fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
-    st.plotly_chart(aplicar_estilo(fig4), use_container_width=True)
+    st.plotly_chart(aplicar_estilo_estatico(fig4), use_container_width=True, config=config_estatico)
 
 with c5:
-    # Faturamento por Idade (Ordenado) apenas com Clientes
     fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade", color_discrete_map=PALETA_MAP)
-    fig5.update_xaxes(categoryorder='category ascending') # Força ordem crescente
-    st.plotly_chart(aplicar_estilo(fig5), use_container_width=True)
+    fig5.update_xaxes(categoryorder='category ascending')
+    st.plotly_chart(aplicar_estilo_estatico(fig5), use_container_width=True, config=config_estatico)
 
 with c6:
-    # Saldo Devedor apenas de Clientes com saldo > 0
     fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente", color_discrete_map=PALETA_MAP)
-    st.plotly_chart(aplicar_estilo(fig6), use_container_width=True)
+    st.plotly_chart(aplicar_estilo_estatico(fig6), use_container_width=True, config=config_estatico)
 
 st.write(""); st.write("")
