@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO E DESIGN DE MÉTRICAS COMPACTAS ---
+# --- CSS RESPONSIVO COM QUEBRA AUTOMÁTICA (FLEX-WRAP) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -22,50 +22,54 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* Estilização dos Cards: Colocando Valor e Delta Lado a Lado */
+    /* Estilização dos Cards com Flexbox Inteligente */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
-        padding: 5px 12px !important; 
+        padding: 8px 12px !important; 
         border: 1px solid #334155; 
-        height: 55px !important;
+        min-height: 65px !important;
+        height: auto !important;
     }}
     
-    /* Container interno do Streamlit para métricas */
+    /* Container que segura o Valor e o Delta */
     div[data-testid="stMetric"] > div {{
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
-        gap: 10px;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important; /* PERMITE QUEBRAR PARA BAIXO SE NÃO COUBER */
+        align-items: baseline !important;
+        gap: 5px 10px !important;
     }}
 
     div[data-testid="stMetricLabel"] {{ 
-        font-size: 0.7rem !important; 
+        font-size: 0.75rem !important; 
         color: #CBD5E1 !important; 
-        margin-bottom: -5px;
+        margin-bottom: 2px !important;
         width: 100%;
     }}
     
     div[data-testid="stMetricValue"] {{ 
-        font-size: 1.0rem !important; 
+        font-size: 1.1rem !important; 
         font-weight: bold; 
-        line-height: 1;
+        line-height: 1.1;
+        white-space: nowrap; /* Garante que o número não quebre no meio */
     }}
     
-    /* Percentual (Delta) ao lado do número */
     div[data-testid="stMetricDelta"] {{ 
         font-size: 0.85rem !important; 
         font-weight: 500 !important;
-        margin-top: 0 !important;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
     }}
 
+    /* Ajuste específico para mobile deitado/pequeno */
     @media (max-width: 768px) {{
         [data-testid="column"] {{ 
             width: 100% !important; 
             flex: 1 1 100% !important; 
-            margin-bottom: 10px; 
+            margin-bottom: 8px; 
         }}
-        .main-title {{ text-align: center; }}
-        div[data-testid="stMetric"] {{ height: 60px !important; }}
+        div[data-testid="stMetricValue"] {{ font-size: 1.0rem !important; }}
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -102,7 +106,7 @@ def load_data():
 df_base = load_data()
 
 if not df_base.empty:
-    # --- CABEÇALHO LÍMPO ---
+    # --- CABEÇALHO ---
     head_col1, head_col2 = st.columns([4, 1])
     with head_col1:
         st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
@@ -113,7 +117,7 @@ if not df_base.empty:
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- MÉTRICAS COM PERCENTUAIS LADO A LADO ---
+    # --- MÉTRICAS ---
     def render_metrics(channel, color):
         subset = df[df['Canal'] == channel]
         fat = subset['Valor'].sum()
