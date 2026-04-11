@@ -6,6 +6,7 @@ import plotly.express as px
 st.set_page_config(page_title="Executive CRM", layout="wide")
 
 # --- CORES IDENTIDADE ---
+# Usando cores claras para os textos e as solicitadas para os dados
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#8B4513", "#FFB347", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
@@ -15,11 +16,10 @@ st.markdown(f"""
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.2rem 1rem 5rem 1rem !important; }}
     
-    /* Força cor branca em absolutamente tudo que for texto */
-    * {{ color: #FFFFFF !important; }}
+    /* Força cor branca em elementos HTML gerais */
+    * {{ color: {TEXT_COLOR} !important; }}
     
     /* AJUSTE DO FILTRO (SELECTBOX) PARA MOBILE */
-    /* Remove o fundo branco e garante texto visível no menu suspenso */
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         border: 1px solid #334155 !important;
@@ -29,7 +29,7 @@ st.markdown(f"""
     }}
     li[role="option"] {{
         background-color: #1E293B !important;
-        color: white !important;
+        color: {TEXT_COLOR} !important;
     }}
     li[role="option"]:hover {{
         background-color: #334155 !important;
@@ -47,20 +47,20 @@ st.markdown(f"""
         background-color: #1E293B; 
         padding: 10px 12px !important; 
         border: 1px solid #334155; 
-        min-height: 90px !important; /* Aumentado para dar respiro ao texto */
+        min-height: 90px !important; 
         border-radius: 8px;
     }}
     
     div[data-testid="stMetric"] > div {{
         display: flex !important;
-        flex-direction: column !important; /* Coluna no mobile evita atropelo lateral */
+        flex-direction: column !important; 
         align-items: flex-start !important;
         gap: 2px !important;
     }}
 
     div[data-testid="stMetricLabel"] {{ 
         font-size: 0.75rem !important; 
-        color: #CBD5E1 !important; 
+        color: #CBD5E1 !important; /* Um cinza claro para o label */
         line-height: 1.2 !important;
         margin-bottom: 4px !important;
     }}
@@ -69,6 +69,7 @@ st.markdown(f"""
         font-size: 1.1rem !important; 
         font-weight: bold; 
         line-height: 1 !important;
+        color: {TEXT_COLOR} !important;
     }}
 
     /* Estilo específico para PC (Telas largas) para manter layout original */
@@ -85,6 +86,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # 2. Conexão com a Planilha
+# Mantendo a lógica de carregamento de dados original
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
 SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
@@ -152,12 +154,37 @@ if not df_base.empty:
     render_metrics('Kalil', COLOR_KALIL)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS ---
+    # --- GRÁFICOS (Ajustado para textos claros) ---
     def estilo(fig):
+        # Correção principal: Forçando a cor branca no layout do Plotly
         fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=210,
-            hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            # Define a cor global da fonte do gráfico como branca
+            font=dict(color=TEXT_COLOR, size=11), 
+            title=dict(font=dict(color=TEXT_COLOR)), # Cor do título
+            margin=dict(l=5, r=5, t=35, b=5), 
+            height=210,
+            hovermode=False, 
+            legend=dict(
+                orientation="h", 
+                yanchor="bottom", 
+                y=1.02, 
+                xanchor="right", 
+                x=1,
+                font=dict(color=TEXT_COLOR) # Cor do texto da legenda
+            )
+        )
+        # Força a cor branca nos eixos e rótulos dos eixos
+        fig.update_xaxes(
+            tickfont=dict(color=TEXT_COLOR),
+            titlefont=dict(color=TEXT_COLOR),
+            gridcolor='rgba(255,255,255,0.1)' # Opcional: grade sutil
+        )
+        fig.update_yaxes(
+            tickfont=dict(color=TEXT_COLOR),
+            titlefont=dict(color=TEXT_COLOR),
+            gridcolor='rgba(255,255,255,0.1)' # Opcional: grade sutil
         )
         return fig
 
@@ -171,11 +198,14 @@ if not df_base.empty:
             fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
             fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
-        fig1.update_traces(textinfo="value+percent initial")
+        # Ajusta a cor do texto dentro das fatias do funil
+        fig1.update_traces(textinfo="value+percent initial", textfont=dict(color=TEXT_COLOR))
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
         fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
+        # Ajusta a cor do texto/rótulos nas barras (se houver)
+        fig2.update_traces(textfont=dict(color=TEXT_COLOR))
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
