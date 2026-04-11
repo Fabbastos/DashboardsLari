@@ -9,12 +9,19 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS ULTRA COMPACTO ---
+# --- CSS ULTRA COMPACTO (Com remoção de botões nativos) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.2rem 1rem 0rem 1rem !important; }}
-    header, footer {{ visibility: hidden; height: 0px; }}
+    
+    /* ESCONDER BOTÕES NATIVOS (Manage App, Menu, Footer) */
+    header {{ visibility: hidden; height: 0px; }}
+    footer {{ visibility: hidden; }}
+    #MainMenu {{ visibility: hidden; }}
+    .stDeployButton {{ display:none; }}
+    [data-testid="stToolbar"] {{ visibility: hidden; }}
+    [data-testid="stDecoration"] {{ display:none; }}
     
     .main-title {{ 
         font-size: 1.2rem !important; 
@@ -134,20 +141,17 @@ with c2:
     st.plotly_chart(aplicar_estilo_dashboard(fig2), use_container_width=True)
 
 with c3:
-    # NOVO: Quantidade de clientes por idade
     df_idade_qtd = df.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd')
     fig3 = px.bar(df_idade_qtd, x="Idade", y="Qtd", color="Canal", barmode='group', title="Qtd. Clientes por Idade", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig3), use_container_width=True)
 
 c4, c5, c6 = st.columns(3)
 with c4:
-    # ALTERADO: Quantidade de cliente por país
     df_pais_qtd = df.groupby(["País", "Canal"]).size().reset_index(name='Qtd')
     fig4 = px.bar(df_pais_qtd, x="País", y="Qtd", color="Canal", barmode='group', title="Qtd. Clientes por País", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig4), use_container_width=True)
 
 with c5:
-    # ALTERADO: Faturamento de clientes por idade
     fig5 = px.bar(df.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo_dashboard(fig5), use_container_width=True)
 
