@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO COM QUEBRA AUTOMÁTICA (FLEX-WRAP) ---
+# --- CSS RESPONSIVO + FILTRO ESCURO MOBILE ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -22,7 +22,7 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* Estilização dos Cards com Flexbox Inteligente */
+    /* Estilização dos Cards */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
         padding: 8px 12px !important; 
@@ -31,11 +31,10 @@ st.markdown(f"""
         height: auto !important;
     }}
     
-    /* Container que segura o Valor e o Delta */
     div[data-testid="stMetric"] > div {{
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: wrap !important; /* PERMITE QUEBRAR PARA BAIXO SE NÃO COUBER */
+        flex-wrap: wrap !important;
         align-items: baseline !important;
         gap: 5px 10px !important;
     }}
@@ -51,7 +50,7 @@ st.markdown(f"""
         font-size: 1.1rem !important; 
         font-weight: bold; 
         line-height: 1.1;
-        white-space: nowrap; /* Garante que o número não quebre no meio */
+        white-space: nowrap;
     }}
     
     div[data-testid="stMetricDelta"] {{ 
@@ -62,14 +61,26 @@ st.markdown(f"""
         white-space: nowrap;
     }}
 
-    /* Ajuste específico para mobile deitado/pequeno */
+    /* FILTRO ESCURO MOBILE E AJUSTES */
     @media (max-width: 768px) {{
+        .stApp {{
+            background-color: #070B14 !important; /* Fundo ainda mais escuro no mobile */
+        }}
+        [data-testid="stMetric"] {{
+            background-color: #131C2E !important; /* Cards mais profundos */
+            border-color: #1E293B !important;
+        }}
         [data-testid="column"] {{ 
             width: 100% !important; 
             flex: 1 1 100% !important; 
             margin-bottom: 8px; 
         }}
         div[data-testid="stMetricValue"] {{ font-size: 1.0rem !important; }}
+        
+        /* Aplica uma leve dessaturação para reduzir cansaço visual no brilho do celular */
+        img, .stPlotlyChart {{
+            filter: brightness(0.9) contrast(1.1);
+        }}
     }}
     </style>
     """, unsafe_allow_html=True)
