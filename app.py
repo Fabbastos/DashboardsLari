@@ -121,7 +121,7 @@ c1, c2, c3 = st.columns(3)
 with c1:
     # Ajustado: De "Vendas" para "Clientes" para ambos os canais
     df_funil = pd.DataFrame({
-        'Etapa': ['1. Contatos', '2. Clientes', '1. Contatos', '2. Clientes'],
+        'Etapa': ['Contatos', 'Clientes', 'Contatos', 'Clientes'],
         'Canal': ['Lead', 'Lead', 'Kalil', 'Kalil'],
         'Qtd': [40, 4, 12, 2]
     })
