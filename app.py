@@ -9,11 +9,16 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS ULTRA COMPACTO ---
+# --- CSS ULTRA COMPACTO (Com Rodapé Adicionado) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
-    .block-container {{ padding: 0.2rem 1rem 0rem 1rem !important; }}
+    
+    /* Adicionado padding-bottom de 5rem para criar o respiro no final */
+    .block-container {{ 
+        padding: 0.2rem 1rem 5rem 1rem !important; 
+    }}
+    
     header {{ visibility: hidden; height: 0px; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
@@ -70,7 +75,7 @@ with head_col2:
 
 df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
 
-# --- MÉTRICAS (Reorganizado para 4 colunas) ---
+# --- MÉTRICAS ---
 def render_metrics(channel, color):
     subset = df[df['Canal'] == channel]
     st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
@@ -126,3 +131,7 @@ with c5:
 with c6:
     fig6 = px.bar(df[df['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo(fig6), use_container_width=True)
+
+# ESPAÇO ADICIONAL NO FINAL
+st.write("")
+st.write("")
