@@ -9,16 +9,11 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS ULTRA COMPACTO (Com Rodapé Adicionado) ---
+# --- CSS ULTRA COMPACTO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
-    
-    /* Adicionado padding-bottom de 5rem para criar o respiro no final */
-    .block-container {{ 
-        padding: 0.2rem 1rem 5rem 1rem !important; 
-    }}
-    
+    .block-container {{ padding: 0.2rem 1rem 5rem 1rem !important; }}
     header {{ visibility: hidden; height: 0px; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
@@ -55,13 +50,11 @@ def load_data():
         ['Vitor Kley', 'Lead', 'Potencial', 0, 0, '20-25', 0, 'Brasil', 'Março'],
     ]
     df = pd.DataFrame(data, columns=columns)
-    
     df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
     df['Saldo Total'] = df['Valor'] - df['Total Pago']
     df['Pago Vista'] = df.apply(lambda x: x['Valor'] if x['Entrada'] == x['Valor'] and x['Valor'] > 0 else 0, axis=1)
     df['Pago Parcelado'] = df.apply(lambda x: x['Total Pago'] if x['Entrada'] < x['Valor'] else 0, axis=1)
     df['Saldo Parcelado'] = df.apply(lambda x: x['Saldo Total'] if x['Entrada'] < x['Valor'] else 0, axis=1)
-    
     return df
 
 df_base = load_data()
@@ -73,7 +66,10 @@ with head_col1:
 with head_col2:
     mes_filtro = st.selectbox("", ["Total", "Janeiro", "Fevereiro", "Março"], label_visibility="collapsed")
 
+# DataFrames Filtrados
 df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
+# Apenas quem é cliente (fez pagamento) para os gráficos que não são funil
+df_vendas = df[df['Total Pago'] > 0].copy()
 
 # --- MÉTRICAS ---
 def render_metrics(channel, color):
@@ -87,7 +83,6 @@ def render_metrics(channel, color):
 
 render_metrics('Lead', COLOR_LEAD)
 render_metrics('Kalil', COLOR_KALIL)
-
 st.markdown("<hr>", unsafe_allow_html=True)
 
 def aplicar_estilo(fig):
@@ -101,37 +96,44 @@ def aplicar_estilo(fig):
 
 # --- GRÁFICOS ---
 c1, c2, c3 = st.columns(3)
+
 with c1:
+    # Funil Real (Lê todos os contatos)
     funnel_rows = []
     for canal in ["Lead", "Kalil"]:
         canal_df = df[df['Canal'] == canal]
         funnel_rows.append({'Etapa': '1. Contatos', 'Canal': canal, 'Qtd': len(canal_df)})
         funnel_rows.append({'Etapa': '2. Clientes', 'Canal': canal, 'Qtd': len(canal_df[canal_df['Total Pago'] > 0])})
-    
-    fig1 = px.funnel(pd.DataFrame(funnel_rows), x='Qtd', y='Etapa', color='Canal', title="Funil Real", color_discrete_map=PALETA_MAP)
+    fig1 = px.funnel(pd.DataFrame(funnel_rows), x='Qtd', y='Etapa', color='Canal', title="Funil Real (Contatos vs Vendas)", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo(fig1), use_container_width=True)
 
 with c2:
-    fig2 = px.bar(df[df['Valor'] > 0].groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Produtos (R$)", color_discrete_sequence=[COLOR_LEAD])
+    # Gráfico Mix apenas com Clientes
+    fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (R$)", color_discrete_sequence=[COLOR_LEAD])
     st.plotly_chart(aplicar_estilo(fig2), use_container_width=True)
 
 with c3:
-    fig3 = px.bar(df.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Qtd. Clientes por Idade", color_discrete_map=PALETA_MAP)
+    # Qtd por Idade (Ordenado) apenas com Clientes
+    fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Qtd. Vendas por Idade", color_discrete_map=PALETA_MAP)
+    fig3.update_xaxes(categoryorder='category ascending')
     st.plotly_chart(aplicar_estilo(fig3), use_container_width=True)
 
 c4, c5, c6 = st.columns(3)
+
 with c4:
-    fig4 = px.bar(df.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Qtd. Clientes por País", color_discrete_map=PALETA_MAP)
+    # Clientes por País apenas com Clientes
+    fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo(fig4), use_container_width=True)
 
 with c5:
-    fig5 = px.bar(df[df['Valor'] > 0].groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade", color_discrete_map=PALETA_MAP)
+    # Faturamento por Idade (Ordenado) apenas com Clientes
+    fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade", color_discrete_map=PALETA_MAP)
+    fig5.update_xaxes(categoryorder='category ascending') # Força ordem crescente
     st.plotly_chart(aplicar_estilo(fig5), use_container_width=True)
 
 with c6:
-    fig6 = px.bar(df[df['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente", color_discrete_map=PALETA_MAP)
+    # Saldo Devedor apenas de Clientes com saldo > 0
+    fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente", color_discrete_map=PALETA_MAP)
     st.plotly_chart(aplicar_estilo(fig6), use_container_width=True)
 
-# ESPAÇO ADICIONAL NO FINAL
-st.write("")
-st.write("")
+st.write(""); st.write("")
