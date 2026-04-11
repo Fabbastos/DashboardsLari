@@ -52,51 +52,58 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Dados (Expandidos e com Lógica de Pagamento)
+# 2. Dados (Com coluna de Mês adicionada)
 def load_data():
-    columns = ['Cliente', 'Canal', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto', 'País', 'Doc_Status']
+    columns = ['Cliente', 'Canal', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto', 'País', 'Mês']
     data = [
-        ['Ana Silva', 'Lead', 'ID-DEFINITIVO', 5000, 5000, '20-25', 0, 'Brasil', 'Ok'],
-        ['Bruno Costa', 'Kalil', 'TRC PROV.', 1500, 500, '31-35', 0, 'Portugal', 'Pendente'],
-        ['Carla Souza', 'Lead', 'AE TODAS', 4500, 4500, '40-45', 0, 'Brasil', 'Ok'],
-        ['Diego Lima', 'Kalil', 'AB CARRO', 8000, 4000, '31-35', 2000, 'Angola', 'Pendente'],
-        ['Erik Rocha', 'Lead', 'Carta AE', 6000, 3000, '26-30', 1000, 'Brasil', 'Ok'],
-        ['Fernanda Luz', 'Lead', 'Renov. CNH', 1200, 1200, '50-55', 0, 'Portugal', 'Ok'],
-        ['Gabriel Mendes', 'Lead', 'ID-DEFINITIVO', 5200, 5200, '20-25', 0, 'Brasil', 'Ok'],
-        ['Helena Ramos', 'Kalil', 'TRC PROV.', 1800, 900, '26-30', 400, 'Portugal', 'Pendente'],
-        ['Igor Antunes', 'Lead', 'AE TODAS', 4500, 2000, '31-35', 500, 'Angola', 'Pendente'],
-        ['Juliana Paes', 'Kalil', 'AB CARRO', 7500, 7500, '40-45', 0, 'EUA', 'Ok'],
-        ['Kevin Oliveira', 'Lead', 'Carta AE', 6000, 3000, '20-25', 0, 'Brasil', 'Pendente'],
-        ['Larissa Mano', 'Kalil', 'Renov. CNH', 1300, 650, '50-55', 100, 'Brasil', 'Ok'],
-        ['Marcos Frota', 'Lead', 'ID-DEFINITIVO', 5000, 5000, '31-35', 0, 'Portugal', 'Ok'],
-        ['Nathalia Dill', 'Kalil', 'AE TODAS', 4200, 2100, '26-30', 1000, 'Angola', 'Pendente'],
-        ['Otávio Mesca', 'Lead', 'AB CARRO', 8500, 4000, '40-45', 2000, 'Brasil', 'Ok'],
-        ['Patrícia Pillar', 'Kalil', 'Carta AE', 5800, 5800, '50-55', 0, 'EUA', 'Ok'],
-        ['Ricardo Tozzi', 'Lead', 'Renov. CNH', 1200, 1200, '20-25', 0, 'Brasil', 'Ok'],
-        ['Sabrina Sato', 'Kalil', 'ID-DEFINITIVO', 5100, 2500, '31-35', 1000, 'Portugal', 'Pendente'],
-        ['Thiago Lacerda', 'Lead', 'TRC PROV.', 1700, 1700, '40-45', 0, 'Angola', 'Ok'],
-        ['Ursula Corbero', 'Kalil', 'AE TODAS', 4600, 2300, '26-30', 0, 'EUA', 'Pendente'],
-        ['Vitor Hugo', 'Lead', 'AB CARRO', 7900, 3900, '50-55', 1000, 'Brasil', 'Ok'],
-        ['Wagner Moura', 'Kalil', 'Carta AE', 6200, 6200, '31-35', 0, 'Portugal', 'Ok'],
-        ['Xuxa Meneghel', 'Lead', 'Renov. CNH', 1250, 1250, '50-55', 0, 'Brasil', 'Ok'],
-        ['Yuri Marçal', 'Kalil', 'ID-DEFINITIVO', 5000, 1000, '20-25', 500, 'Angola', 'Pendente'],
-        ['Zeca Pagode', 'Lead', 'AE TODAS', 4400, 4400, '40-45', 0, 'Brasil', 'Ok'],
-        ['Aline Riscado', 'Kalil', 'AB CARRO', 8200, 4100, '26-30', 2000, 'EUA', 'Pendente'],
+        ['Ana Silva', 'Lead', 'ID-DEFINITIVO', 5000, 5000, '20-25', 0, 'Brasil', 'Janeiro'],
+        ['Bruno Costa', 'Kalil', 'TRC PROV.', 1500, 500, '31-35', 0, 'Portugal', 'Janeiro'],
+        ['Carla Souza', 'Lead', 'AE TODAS', 4500, 4500, '40-45', 0, 'Brasil', 'Fevereiro'],
+        ['Diego Lima', 'Kalil', 'AB CARRO', 8000, 4000, '31-35', 2000, 'Angola', 'Fevereiro'],
+        ['Erik Rocha', 'Lead', 'Carta AE', 6000, 3000, '26-30', 1000, 'Brasil', 'Março'],
+        ['Fernanda Luz', 'Lead', 'Renov. CNH', 1200, 1200, '50-55', 0, 'Portugal', 'Março'],
+        ['Gabriel Mendes', 'Lead', 'ID-DEFINITIVO', 5200, 5200, '20-25', 0, 'Brasil', 'Janeiro'],
+        ['Helena Ramos', 'Kalil', 'TRC PROV.', 1800, 900, '26-30', 400, 'Portugal', 'Janeiro'],
+        ['Igor Antunes', 'Lead', 'AE TODAS', 4500, 2000, '31-35', 500, 'Angola', 'Fevereiro'],
+        ['Juliana Paes', 'Kalil', 'AB CARRO', 7500, 7500, '40-45', 0, 'EUA', 'Fevereiro'],
+        ['Kevin Oliveira', 'Lead', 'Carta AE', 6000, 3000, '20-25', 0, 'Brasil', 'Março'],
+        ['Larissa Mano', 'Kalil', 'Renov. CNH', 1300, 650, '50-55', 100, 'Brasil', 'Março'],
+        ['Marcos Frota', 'Lead', 'ID-DEFINITIVO', 5000, 5000, '31-35', 0, 'Portugal', 'Janeiro'],
+        ['Nathalia Dill', 'Kalil', 'AE TODAS', 4200, 2100, '26-30', 1000, 'Angola', 'Janeiro'],
+        ['Otávio Mesca', 'Lead', 'AB CARRO', 8500, 4000, '40-45', 2000, 'Brasil', 'Fevereiro'],
+        ['Patrícia Pillar', 'Kalil', 'Carta AE', 5800, 5800, '50-55', 0, 'EUA', 'Fevereiro'],
+        ['Ricardo Tozzi', 'Lead', 'Renov. CNH', 1200, 1200, '20-25', 0, 'Brasil', 'Março'],
+        ['Sabrina Sato', 'Kalil', 'ID-DEFINITIVO', 5100, 2500, '31-35', 1000, 'Portugal', 'Março'],
+        ['Thiago Lacerda', 'Lead', 'TRC PROV.', 1700, 1700, '40-45', 0, 'Angola', 'Janeiro'],
+        ['Ursula Corbero', 'Kalil', 'AE TODAS', 4600, 2300, '26-30', 0, 'EUA', 'Janeiro'],
+        ['Vitor Hugo', 'Lead', 'AB CARRO', 7900, 3900, '50-55', 1000, 'Brasil', 'Fevereiro'],
+        ['Wagner Moura', 'Kalil', 'Carta AE', 6200, 6200, '31-35', 0, 'Portugal', 'Fevereiro'],
+        ['Xuxa Meneghel', 'Lead', 'Renov. CNH', 1250, 1250, '50-55', 0, 'Brasil', 'Março'],
+        ['Yuri Marçal', 'Kalil', 'ID-DEFINITIVO', 5000, 1000, '20-25', 500, 'Angola', 'Março'],
+        ['Zeca Pagode', 'Lead', 'AE TODAS', 4400, 4400, '40-45', 0, 'Brasil', 'Janeiro'],
+        ['Aline Riscado', 'Kalil', 'AB CARRO', 8200, 4100, '26-30', 2000, 'EUA', 'Janeiro'],
     ]
     df = pd.DataFrame(data, columns=columns)
     
-    # Lógica de Separação
     df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
     df['Saldo Total'] = df['Valor'] - df['Total Pago']
-    
-    # Se Entrada == Valor, é à vista. Senão, é parcelado.
     df['Pago Vista'] = df.apply(lambda x: x['Valor'] if x['Entrada'] == x['Valor'] else 0, axis=1)
     df['Pago Parcelado'] = df.apply(lambda x: x['Total Pago'] if x['Entrada'] < x['Valor'] else 0, axis=1)
     df['Saldo Parcelado'] = df.apply(lambda x: x['Saldo Total'] if x['Entrada'] < x['Valor'] else 0, axis=1)
     
     return df
 
-df = load_data()
+df_base = load_data()
+
+# --- FILTRO NA SIDEBAR ---
+with st.sidebar:
+    st.markdown("### Filtros")
+    mes_filtro = st.selectbox("Selecionar Período", ["Total", "Janeiro", "Fevereiro", "Março"])
+
+if mes_filtro == "Total":
+    df = df_base
+else:
+    df = df_base[df_base['Mês'] == mes_filtro]
 
 def aplicar_estilo_dashboard(fig):
     fig.update_layout(
@@ -132,7 +139,13 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # --- GRÁFICOS ---
 c1, c2, c3 = st.columns(3)
 with c1:
-    df_funil = pd.DataFrame({'Etapa': ['Contatos', 'Clientes', 'Contatos', 'Clientes'], 'Canal': ['Lead', 'Lead', 'Kalil', 'Kalil'], 'Qtd': [120, 15, 80, 11]})
+    # Ajustando funil proporcional ao filtro (simulação)
+    fator = 1 if mes_filtro == "Total" else 0.4
+    df_funil = pd.DataFrame({
+        'Etapa': ['Contatos', 'Clientes', 'Contatos', 'Clientes'], 
+        'Canal': ['Lead', 'Lead', 'Kalil', 'Kalil'], 
+        'Qtd': [int(120*fator), len(df[df['Canal']=='Lead']), int(80*fator), len(df[df['Canal']=='Kalil'])]
+    })
     fig1 = px.funnel(df_funil, x='Qtd', y='Etapa', color='Canal', title="Conversão", color_discrete_map=PALETA_MAP)
     fig1.update_traces(textinfo="value", textfont=dict(color="white", size=12))
     st.plotly_chart(aplicar_estilo_dashboard(fig1), use_container_width=True)
