@@ -9,7 +9,7 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO ---
+# --- CSS RESPONSIVO E DESIGN DE MÉTRICAS ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -22,27 +22,55 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* Estilização dos Cards */
+    /* Estilização dos Cards de Métricas Canal */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
-        padding: 2px 10px !important; 
+        padding: 5px 10px !important; 
         border: 1px solid #334155; 
-        height: 65px !important; 
+        height: 80px !important; /* Altura aumentada para caber o delta maior */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
     }}
-    div[data-testid="stMetricLabel"] {{ font-size: 0.72rem !important; color: #CBD5E1 !important; margin-bottom: -15px; }}
-    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
+    div[data-testid="stMetricLabel"] {{ font-size: 0.72rem !important; color: #CBD5E1 !important; margin-bottom: -10px; }}
+    div[data-testid="stMetricValue"] {{ font-size: 1.2rem !important; font-weight: bold; }}
     
-    /* Ajuste para o Percentual (Delta) */
-    div[data-testid="stMetricDelta"] {{ font-size: 0.8rem !important; font-weight: 400 !important; }}
+    /* Percentual (Delta) Maior e Dentro do Card */
+    div[data-testid="stMetricDelta"] {{ 
+        font-size: 1.0rem !important; /* Aumentado */
+        font-weight: 600 !important;
+        background-color: rgba(255,255,255,0.05); /* Fundo sutil */
+        padding: 2px 5px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-top: 5px;
+    }}
 
+    /* Estilização do Card de Conversão (Cabeçalho) */
+    .conversao-card div[data-testid="stMetric"] {{
+        border: 2px solid {COLOR_LEAD};
+        height: 60px !important;
+        justify-content: center;
+    }}
+    .conversao-card div[data-testid="stMetricLabel"] {{ font-size: 0.8rem !important; color: white !important; font-weight: bold; }}
+    .conversao-card div[data-testid="stMetricValue"] {{ font-size: 1.5rem !important; }}
+
+    /* RESPONSIVIDADE PARA CELULAR */
     @media (max-width: 768px) {{
-        [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 12px; }}
+        [data-testid="column"] {{ 
+            width: 100% !important; 
+            flex: 1 1 100% !important; 
+            min-width: 100% !important;
+            margin-bottom: 12px; 
+        }}
         .main-title {{ text-align: center; font-size: 1.4rem !important; }}
+        div[data-testid="stMetric"] {{ height: 90px !important; }}
+        .conversao-card div[data-testid="stMetric"] {{ height: 70px !important; }}
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Conexão com a Planilha
+# 2. Conexão com a Planilha (Link de Exportação CSV)
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
 SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
@@ -54,15 +82,18 @@ def load_data():
 
         def clean_currency(value):
             if isinstance(value, str):
+                # Remove símbolo de Euro, pontos de milhar e espaços
                 clean_val = value.replace('€', '').replace('.', '').replace(',', '.').strip()
                 return pd.to_numeric(clean_val, errors='coerce')
             return value
 
+        # Colunas que precisam ser numéricas para cálculos
         cols_financeiras = ['Valor', 'Entrada', 'Segundo_Pagto']
         for col in cols_financeiras:
             if col in df.columns:
                 df[col] = df[col].apply(clean_currency).fillna(0)
 
+        # Cálculos de Métricas
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
         
@@ -77,24 +108,41 @@ def load_data():
         )
         
         return df
-    except:
+    except Exception as e:
+        # st.error(f"Erro na conexão de dados: {e}") # Desativado para produção
         return pd.DataFrame()
 
 df_base = load_data()
 
 if not df_base.empty:
     # --- CABEÇALHO ---
-    head_col1, head_col2 = st.columns([4, 1])
+    # head_col1: Título | head_col2: Conversão | head_col3: Filtro Mês
+    head_col1, head_col2, head_col3 = st.columns([2.5, 1.2, 1])
+    
     with head_col1:
         st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
-    with head_col2:
+    
+    with head_col3:
+        # Pega meses únicos da sua planilha
         meses_disponiveis = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
         mes_filtro = st.selectbox("", meses_disponiveis, label_visibility="collapsed")
 
+    # Filtros de Dados
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
+    
+    with head_col2:
+        # Cálculo da Taxa de Conversão Geral (Clientes / Contatos)
+        total_contatos = len(df)
+        total_clientes = len(df[df['Total Pago'] > 0])
+        taxa_conversao = (total_clientes / total_contatos * 100) if total_contatos > 0 else 0
+        
+        st.markdown('<div class="conversao-card">', unsafe_allow_html=True)
+        st.metric(label="Taxa Conversão", value=f"{taxa_conversao:.1f}%")
+        st.markdown('</div>', unsafe_allow_html=True)
+
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- MÉTRICAS COM PERCENTUAIS ---
+    # --- MÉTRICAS CANAL COM PERCENTUAIS INTERNOS E MAIORES ---
     def render_metrics(channel, color):
         subset = df[df['Canal'] == channel]
         faturamento = subset['Valor'].sum()
@@ -102,10 +150,9 @@ if not df_base.empty:
         st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
         m1, m2, m3, m4 = st.columns(4)
         
-        # Faturamento (Base para o cálculo)
+        # Faturamento (Base)
         m1.metric("Faturamento", f"€ {faturamento:,.0f}".replace(',', '.'))
         
-        # Cálculos de Percentual
         def calc_pct(parte):
             return (parte / faturamento * 100) if faturamento > 0 else 0
 
@@ -117,7 +164,7 @@ if not df_base.empty:
         parcelado = subset['Pago Parcelado'].sum()
         m3.metric("Pago Parcelado", f"€ {parcelado:,.0f}".replace(',', '.'), delta=f"{calc_pct(parcelado):.1f}% do total", delta_color="normal")
         
-        # Saldo Parcelado
+        # Saldo Parcelado (Delta Inverse para cor de atenção)
         saldo = subset['Saldo Parcelado'].sum()
         m4.metric("Saldo Parcelado", f"€ {saldo:,.0f}".replace(',', '.'), delta=f"{calc_pct(saldo):.1f}% do total", delta_color="inverse")
 
@@ -125,11 +172,11 @@ if not df_base.empty:
     render_metrics('Kalil', COLOR_KALIL)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS ---
+    # --- CONFIG GRÁFICOS (Estáticos) ---
     def aplicar_estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=10, r=10, t=35, b=5), height=200,
+            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=10, r=10, t=35, b=5), height=220,
             hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         return fig
@@ -138,35 +185,44 @@ if not df_base.empty:
     c1, c2, c3 = st.columns(3)
 
     with c1:
+        # Funil Real (Contatos vs Vendas por Canal)
         funnel_data = []
         for c in ["Lead", "Kalil"]:
             sub = df[df['Canal'] == c]
             funnel_data.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
             funnel_data.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
+        
         fig1 = px.funnel(pd.DataFrame(funnel_data), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
+        # Adiciona rótulos de porcentagem dentro do funil
+        fig1.update_traces(textinfo="value+percent initial", textfont_color="white")
         st.plotly_chart(aplicar_estilo(fig1), use_container_width=True, config=config_est)
 
     with c2:
+        # Mix de Vendas apenas de Clientes
         fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
         st.plotly_chart(aplicar_estilo(fig2), use_container_width=True, config=config_est)
 
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
+        # Qtd Vendas por Idade apenas de Clientes
+        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Qtd. Vendas por Idade", color_discrete_map=PALETA_MAP)
         fig3.update_xaxes(categoryorder='category ascending')
         st.plotly_chart(aplicar_estilo(fig3), use_container_width=True, config=config_est)
 
     c4, c5, c6 = st.columns(3)
     with c4:
+        # Clientes por País apenas de Clientes
         fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
         st.plotly_chart(aplicar_estilo(fig4), use_container_width=True, config=config_est)
 
     with c5:
+        # Faturamento por Idade apenas de Clientes
         fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
         fig5.update_xaxes(categoryorder='category ascending')
         st.plotly_chart(aplicar_estilo(fig5), use_container_width=True, config=config_est)
 
     with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor (€)", color_discrete_map=PALETA_MAP)
+        # Saldo Devedor apenas de Clientes com dívida pendente
+        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
         st.plotly_chart(aplicar_estilo(fig6), use_container_width=True, config=config_est)
 
 st.write(""); st.write("")
