@@ -5,8 +5,7 @@ import plotly.express as px
 # 1. Configuração da Página
 st.set_page_config(page_title="Executive CRM", layout="wide")
 
-# --- CORES IDENTIDADE (ATUALIZADAS) ---
-# Marrom: #8B4513 | Laranja Claro: #FFB347
+# --- CORES IDENTIDADE ---
 COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#8B4513", "#FFB347", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
@@ -15,7 +14,27 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.2rem 1rem 5rem 1rem !important; }}
+    
+    /* Força cor branca em absolutamente tudo que for texto */
     * {{ color: #FFFFFF !important; }}
+    
+    /* AJUSTE DO FILTRO (SELECTBOX) PARA MOBILE */
+    /* Remove o fundo branco e garante texto visível no menu suspenso */
+    div[data-baseweb="select"] > div {{
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+    }}
+    ul[role="listbox"] {{
+        background-color: #1E293B !important;
+    }}
+    li[role="option"] {{
+        background-color: #1E293B !important;
+        color: white !important;
+    }}
+    li[role="option"]:hover {{
+        background-color: #334155 !important;
+    }}
+    
     header {{ visibility: hidden; height: 0px; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
@@ -23,23 +42,45 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
+    /* AJUSTE DAS MÉTRICAS PARA EVITAR SOBREPOSIÇÃO */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
-        padding: 8px 12px !important; 
+        padding: 10px 12px !important; 
         border: 1px solid #334155; 
-        min-height: 65px !important;
+        min-height: 90px !important; /* Aumentado para dar respiro ao texto */
+        border-radius: 8px;
     }}
     
     div[data-testid="stMetric"] > div {{
         display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: wrap !important;
-        align-items: baseline !important;
-        gap: 5px 10px !important;
+        flex-direction: column !important; /* Coluna no mobile evita atropelo lateral */
+        align-items: flex-start !important;
+        gap: 2px !important;
     }}
 
-    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; color: #CBD5E1 !important; }}
-    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
+    div[data-testid="stMetricLabel"] {{ 
+        font-size: 0.75rem !important; 
+        color: #CBD5E1 !important; 
+        line-height: 1.2 !important;
+        margin-bottom: 4px !important;
+    }}
+    
+    div[data-testid="stMetricValue"] {{ 
+        font-size: 1.1rem !important; 
+        font-weight: bold; 
+        line-height: 1 !important;
+    }}
+
+    /* Estilo específico para PC (Telas largas) para manter layout original */
+    @media (min-width: 992px) {{
+        div[data-testid="stMetric"] > div {{
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            align-items: baseline !important;
+            gap: 5px 10px !important;
+        }}
+        div[data-testid="stMetric"] {{ min-height: 65px !important; }}
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -134,7 +175,6 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
-        # Aqui usei o COLOR_LEAD (Marrom) como cor principal do Mix
         fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
