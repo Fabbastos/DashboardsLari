@@ -45,19 +45,40 @@ st.markdown(f"""
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
 SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
-@st.cache_data(ttl=60) # Atualiza a cada 60 segundos
+@st.cache_data(ttl=60)
 def load_data():
     try:
         df = pd.read_csv(SHEET_URL)
-        # Limpeza básica de nomes de colunas (remove espaços extras)
         df.columns = [c.strip() for c in df.columns]
+
+        # Função interna para limpar moedas e converter para número
+        def clean_currency(value):
+            if isinstance(value, str):
+                # Remove símbolo de Euro, pontos de milhar e espaços
+                clean_val = value.replace('€', '').replace('.', '').replace(',', '.').strip()
+                return pd.to_numeric(clean_val, errors='coerce')
+            return value
+
+        # Colunas que precisam ser numéricas para cálculos
+        cols_financeiras = ['Valor', 'Entrada', 'Segundo_Pagto']
+        for col in cols_financeiras:
+            if col in df.columns:
+                df[col] = df[col].apply(clean_currency).fillna(0)
+
+        # Agora os cálculos matemáticos funcionarão sem erro de "str"
+        df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
+        df['Saldo Total'] = df['Valor'] - df['Total Pago']
         
-        # Cálculos Automáticos
-        df['Total Pago'] = df['Entrada'].fillna(0) + df['Segundo_Pagto'].fillna(0)
-        df['Saldo Total'] = df['Valor'].fillna(0) - df['Total Pago']
-        df['Pago Vista'] = df.apply(lambda x: x['Valor'] if x['Entrada'] == x['Valor'] and x['Valor'] > 0 else 0, axis=1)
-        df['Pago Parcelado'] = df.apply(lambda x: x['Total Pago'] if x['Entrada'] < x['Valor'] else 0, axis=1)
-        df['Saldo Parcelado'] = df.apply(lambda x: x['Saldo Total'] if x['Entrada'] < x['Valor'] else 0, axis=1)
+        df['Pago Vista'] = df.apply(
+            lambda x: x['Valor'] if x['Entrada'] == x['Valor'] and x['Valor'] > 0 else 0, axis=1
+        )
+        df['Pago Parcelado'] = df.apply(
+            lambda x: x['Total Pago'] if x['Entrada'] < x['Valor'] else 0, axis=1
+        )
+        df['Saldo Parcelado'] = df.apply(
+            lambda x: x['Saldo Total'] if x['Entrada'] < x['Valor'] else 0, axis=1
+        )
+        
         return df
     except Exception as e:
         st.error(f"Erro ao conectar com a planilha: {e}")
