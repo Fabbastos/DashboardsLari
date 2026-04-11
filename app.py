@@ -5,11 +5,12 @@ import plotly.express as px
 # 1. Configuração da Página
 st.set_page_config(page_title="Executive CRM", layout="wide")
 
-# --- CORES IDENTIDADE ---
-COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#5BC0EB", "#A05195", "#FFFFFF"
+# --- CORES IDENTIDADE (ATUALIZADAS) ---
+# Marrom: #8B4513 | Laranja Claro: #FFB347
+COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#8B4513", "#FFB347", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
 
-# --- CSS RESPONSIVO COM QUEBRA AUTOMÁTICA (FLEX-WRAP) ---
+# --- CSS RESPONSIVO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -22,55 +23,23 @@ st.markdown(f"""
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
     .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
 
-    /* Estilização dos Cards com Flexbox Inteligente */
     div[data-testid="stMetric"] {{ 
         background-color: #1E293B; 
         padding: 8px 12px !important; 
         border: 1px solid #334155; 
         min-height: 65px !important;
-        height: auto !important;
     }}
     
-    /* Container que segura o Valor e o Delta */
     div[data-testid="stMetric"] > div {{
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: wrap !important; /* PERMITE QUEBRAR PARA BAIXO SE NÃO COUBER */
+        flex-wrap: wrap !important;
         align-items: baseline !important;
         gap: 5px 10px !important;
     }}
 
-    div[data-testid="stMetricLabel"] {{ 
-        font-size: 0.75rem !important; 
-        color: #CBD5E1 !important; 
-        margin-bottom: 2px !important;
-        width: 100%;
-    }}
-    
-    div[data-testid="stMetricValue"] {{ 
-        font-size: 1.1rem !important; 
-        font-weight: bold; 
-        line-height: 1.1;
-        white-space: nowrap; /* Garante que o número não quebre no meio */
-    }}
-    
-    div[data-testid="stMetricDelta"] {{ 
-        font-size: 0.85rem !important; 
-        font-weight: 500 !important;
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-    }}
-
-    /* Ajuste específico para mobile deitado/pequeno */
-    @media (max-width: 768px) {{
-        [data-testid="column"] {{ 
-            width: 100% !important; 
-            flex: 1 1 100% !important; 
-            margin-bottom: 8px; 
-        }}
-        div[data-testid="stMetricValue"] {{ font-size: 1.0rem !important; }}
-    }}
+    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; color: #CBD5E1 !important; }}
+    div[data-testid="stMetricValue"] {{ font-size: 1.1rem !important; font-weight: bold; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -165,6 +134,7 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
+        # Aqui usei o COLOR_LEAD (Marrom) como cor principal do Mix
         fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
