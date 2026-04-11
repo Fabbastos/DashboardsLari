@@ -56,15 +56,31 @@ vencedor = "Lead" if fat_lead > fat_kalil else "Kalil"
 # 3. Cabeçalho
 st.markdown("<h2 style='margin-top: 5px; margin-bottom: 10px; font-weight: bold;'>📊 Executive CRM Dashboard</h2>", unsafe_allow_html=True)
 
-# Linha de Métricas
-m1, m2, m3, m4, m5, m6 = st.columns(6)
-m1.metric("Faturamento", f"R$ {df['Valor'].sum():,.0f}")
-m2.metric("Recebido", f"R$ {df['Total Pago'].sum():,.0f}")
-m3.metric("Saldo", f"R$ {df['Saldo'].sum():,.0f}")
-m4.metric("Vendas Fechadas", len(df))
-m5.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.0f}")
-m6.metric(f"Vantagem ({vencedor})", f"+ R$ {diff_fat:,.0f}")
+# --- Trecho Alterado: Linha de Métricas ---
 
+# Cálculos de Faturamento por Canal
+fat_lead = df[df['Canal'] == 'Lead']['Valor'].sum()
+fat_kalil = df[df['Canal'] == 'Kalil']['Valor'].sum()
+diff_fat = abs(fat_lead - fat_kalil)
+vencedor = "Lead" if fat_lead > fat_kalil else "Kalil"
+
+# Linha de Métricas (6 colunas atualizadas)
+m1, m2, m3, m4, m5, m6 = st.columns(6)
+
+with m1:
+    st.metric("Faturamento LEAD", f"R$ {fat_lead:,.0f}")
+with m2:
+    st.metric("Faturamento KALIL", f"R$ {fat_kalil:,.0f}")
+with m3:
+    st.metric("Total Recebido", f"R$ {df['Total Pago'].sum():,.0f}")
+with m4:
+    st.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.0f}")
+with m5:
+    st.metric("Vendas Fechadas", len(df))
+with m6:
+    st.metric(f"Vantagem ({vencedor})", f"R$ {diff_fat:,.0f}")
+
+# ------------------------------------------
 # --- Configuração de Estilo dos Gráficos (FONTES MAIORES E MAIS CLARAS) ---
 cores = ["#5BC0EB", "#F9B24D", "#A05195", "#2F5D8C", "#665191"]
 chart_height = 240 
