@@ -13,23 +13,33 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Sidebar - Importação de Dados
-st.sidebar.header("📁 Importação de Dados")
-uploaded_file = st.sidebar.file_uploader("Carregue seu arquivo CSV do CRM", type=["csv"])
+# 2. Sidebar - Importação e Configurações de Leads
+st.sidebar.header("📁 Gestão de Dados")
+uploaded_file = st.sidebar.file_uploader("Carregue seu arquivo CSV", type=["csv"])
+
+st.sidebar.markdown("---")
+st.sidebar.header("🎯 Funil de Vendas")
+total_leads = st.sidebar.number_input("Total de Leads (Contatos)", min_value=1, value=40)
 
 # Função para carregar os dados
 def load_data():
+    # Colunas atualizadas conforme pedido
+    columns = [
+        'Cliente', 'Indicador', 'Categoria', 'Valor', 'Entrada', 
+        'Idade', 'Segundo_Pagto', 'Data', 'País', 'Indicação_Kalil',
+        'Doc enviado', 'Doc Recebido', 'Comissão Larissa', 'telefone'
+    ]
+    
     if uploaded_file is not None:
         return pd.read_csv(uploaded_file)
     else:
-        # Dados padrão
+        # Dados padrão atualizados com as novas colunas
         data = [
-            ['Ana Silva', 'Instagram', 'VIP', 5000, 2500, '20-25 anos', 1000, '2026-04-10', 'Brasil', 'Não'],
-            ['Bruno Costa', 'Kalil', 'Standard', 1500, 500, '30-35 anos', 0, '2026-04-10', 'Portugal', 'Sim'],
-            ['Carla Souza', 'Google', 'Premium', 4500, 4500, '40-45 anos', 0, '2026-04-11', 'Brasil', 'Não'],
-            ['Diego Lima', 'Kalil', 'VIP', 8000, 4000, '30-35 anos', 2000, '2026-04-11', 'Angola', 'Sim'],
+            ['Ana Silva', 'Instagram', 'VIP', 5000, 2500, '20-25 anos', 1000, '2026-04-10', 'Brasil', 'Não', 'Ok', 'Ok', 'Ok', '5511999999999'],
+            ['Bruno Costa', 'Kalil', 'Standard', 1500, 500, '30-35 anos', 0, '2026-04-10', 'Portugal', 'Sim', 'Ok', '', 'Ok', '351910000000'],
+            ['Carla Souza', 'Google', 'Premium', 4500, 4500, '40-45 anos', 0, '2026-04-11', 'Brasil', 'Não', '', '', '', '5521988888888'],
+            ['Diego Lima', 'Kalil', 'VIP', 8000, 4000, '30-35 anos', 2000, '2026-04-11', 'Angola', 'Sim', 'Ok', 'Ok', '', '244910000000'],
         ]
-        columns = ['Cliente', 'Indicador', 'Categoria', 'Valor', 'Entrada', 'Idade', 'Segundo_Pagto', 'Data', 'País', 'Indicação_Kalil']
         return pd.DataFrame(data, columns=columns)
 
 df = load_data()
@@ -41,107 +51,78 @@ for col in numeric_cols:
 
 df['Saldo'] = df['Valor'] - (df['Entrada'] + df['Segundo_Pagto'])
 
-# 4. Interface Principal e Cabeçalho
+# Preenche vazios nas colunas de status para evitar erros visualização
+status_cols = ['Doc enviado', 'Doc Recebido', 'Comissão Larissa']
+for col in status_cols:
+    df[col] = df[col].fillna('').replace({'nan': ''})
+
+total_vendas_count = len(df)
+taxa_conversao = (total_vendas_count / total_leads) * 100
+
+# 4. Interface Principal
 st.title("📊 CRM Dashboard | Gestão Kalil")
-if uploaded_file:
-    st.success(f"Arquivo '{uploaded_file.name}' carregado com sucesso!")
-else:
-    st.info("Exibindo dados de demonstração. Carregue um CSV na barra lateral para atualizar.")
+if not uploaded_file:
+    st.info("💡 Usando dados demonstrativos. Use a barra lateral para carregar seu CSV.")
 
 st.markdown("---")
 
-# 5. Relatório Inteligente (Simulação de IA)
-st.markdown("### 🤖 Gerador de Insights Analíticos")
-if st.button("Gerar Relatório dos Dados Atuais"):
-    # Cálculos dinâmicos para a "IA"
-    total_vendas = df['Valor'].sum()
-    top_pais = df.groupby('País')['Valor'].sum().idxmax()
-    top_origem = df.groupby('Indicador')['Valor'].sum().idxmax()
-    perc_receber = (df['Saldo'].sum() / total_vendas) * 100 if total_vendas > 0 else 0
-    qtd_vip = len(df[df['Categoria'] == 'VIP'])
-    
-    # Texto gerado dinamicamente
-    relatorio = f"""
-    **Análise Executiva:**
-    Identificamos que o faturamento total alcançou **R$ {total_vendas:,.2f}**, sendo o mercado de **{top_pais}** o principal responsável pelo volume financeiro atual.
-    
-    A principal fonte de atração de clientes pagantes neste período foi via **{top_origem}**. Atualmente, você possui **{qtd_vip} cliente(s) VIP** na sua base ativa.
-    
-    **Ponto de Atenção:** Aproximadamente **{perc_receber:.1f}%** do valor das vendas ainda está pendente (Saldo a Receber). Recomenda-se acionar a equipe de cobrança para os pagamentos de segunda parcela.
-    """
-    st.info(relatorio)
-
-st.markdown("---")
-
-# 6. Métricas Principais
-m1, m2, m3, m4 = st.columns(4)
+# 5. Métricas Principais
+m1, m2, m3, m4, m5 = st.columns(5)
 m1.metric("Volume de Vendas", f"R$ {df['Valor'].sum():,.2f}")
 m2.metric("Saldo a Receber", f"R$ {df['Saldo'].sum():,.2f}")
 m3.metric("Ticket Médio", f"R$ {df['Valor'].mean():,.2f}")
-m4.metric("Total Clientes", len(df))
+m4.metric("Taxa de Conversão", f"{taxa_conversao:.1f}%")
+# Nova métrica de pendência documental
+docs_pendentes = len(df[df['Doc Recebido'] != 'Ok'])
+m5.metric("Docs Pendentes", docs_pendentes, delta=f"{docs_pendentes} clientes", delta_color="inverse")
 
-# 7. Seção de Gráficos 2D
-st.markdown("### 📈 Visualizações Essenciais")
-col1, col2 = st.columns(2)
+st.markdown("---")
 
-with col1:
-    fig_pais = px.bar(
-        df.groupby("País")["Valor"].sum().sort_values(ascending=True).reset_index(),
-        x="Valor", y="País", orientation="h",
-        title="Faturamento por País",
-        color_discrete_sequence=["#bb463c"],
-        text_auto='.2s'
-    )
-    st.plotly_chart(fig_pais, use_container_width=True)
+# 6. Relatório Inteligente (Simulação de IA)
+st.markdown("### 🤖 Insights de Performance")
+if st.button("Gerar Análise Crítica"):
+    comissao_paga = len(df[df['Comissão Larissa'] == 'Ok'])
+    relatorio = f"""
+    - **Conversão:** Sua taxa de **{taxa_conversao:.1f}%** está dentro do esperado para o tráfego atual.
+    - **Documentação:** Existem **{docs_pendentes}** processos com documentação incompleta. Isso pode atrasar o recebimento do saldo de R$ {df['Saldo'].sum():,.2f}.
+    - **Comissões:** Das {len(df)} vendas, **{comissao_paga}** comissões da Larissa já foram processadas.
+    - **Atenção:** Verifique os telefones dos clientes de **{df.groupby('País')['Valor'].sum().idxmax()}**, que é o seu maior mercado hoje.
+    """
+    st.success(relatorio)
 
-with col2:
-    fig_cat = px.pie(
-        df, names='Categoria', values='Valor',
-        title="Mix de Categorias (Valor)",
-        hole=0.4,
-        color_discrete_sequence=px.colors.qualitative.Bold
-    )
-    st.plotly_chart(fig_cat, use_container_width=True)
+# 7. Seção de Gráficos
+st.markdown("### 📈 Análise Visual")
 
-col3, col4 = st.columns(2)
-
-with col3:
-    fig_origem = px.bar(
-        df.groupby("Indicador")["Cliente"].count().reset_index(),
-        x="Indicador", y="Cliente",
-        title="Quantidade de Clientes por Origem",
-        labels={'Cliente': 'Qtd Clientes'},
-        color_discrete_sequence=["#2c3e50"]
-    )
-    st.plotly_chart(fig_origem, use_container_width=True)
-
-with col4:
-    df_pag = pd.DataFrame({
-        'Status': ['Recebido', 'A Receber'],
-        'Total': [(df['Entrada'] + df['Segundo_Pagto']).sum(), df['Saldo'].sum()]
+c1, c2 = st.columns(2)
+with c1:
+    dados_funil = pd.DataFrame({
+        "Etapa": ["Leads (Contatos)", "Vendas Fechadas"],
+        "Quantidade": [total_leads, total_vendas_count]
     })
-    fig_pag = px.pie(df_pag, values='Total', names='Status', title="Saúde Financeira (Fluxo)",
-                     color_discrete_sequence=["#27ae60", "#e74c3c"])
-    st.plotly_chart(fig_pag, use_container_width=True)
+    fig_funil = px.funnel(dados_funil, x='Quantidade', y='Etapa', title="Funil de Vendas", color_discrete_sequence=["#2c3e50"])
+    st.plotly_chart(fig_funil, use_container_width=True)
 
-# 8. Gráfico 3D Multidimensional
-st.markdown("### 🌌 Mapeamento de Vendas em 3D")
-# Relaciona País (Eixo X), Categoria (Eixo Y) e Valor da Venda (Eixo Z - Altura), colorindo pela Origem
-fig_3d = px.scatter_3d(
-    df, 
-    x='País', 
-    y='Categoria', 
-    z='Valor',
-    color='Indicador', 
-    size='Valor', 
-    hover_name='Cliente',
-    title="Análise Cruzada: País x Categoria x Valor",
-    color_discrete_sequence=px.colors.qualitative.Prism
+with c2:
+    fig_origem_val = px.bar(
+        df.groupby("Indicador")["Valor"].sum().reset_index(),
+        x="Indicador", y="Valor",
+        title="Faturamento por Canal",
+        text_auto='.2s',
+        color_discrete_sequence=["#bb463c"]
+    )
+    st.plotly_chart(fig_origem_val, use_container_width=True)
+
+# 8. Tabela de Dados com Formatação Condicional
+st.markdown("### 📋 Detalhamento e Status de Processos")
+
+# Função para colorir as células de OK
+def color_ok(val):
+    color = '#d4edda' if val == 'Ok' else ''
+    return f'background-color: {color}'
+
+# Exibe a tabela formatada
+st.dataframe(
+    df.style.applymap(color_ok, subset=status_cols)
+            .format({'Valor': 'R$ {:.2f}', 'Saldo': 'R$ {:.2f}'}),
+    use_container_width=True
 )
-# Ajusta o tamanho do gráfico 3D
-fig_3d.update_layout(margin=dict(l=0, r=0, b=0, t=40), height=600)
-st.plotly_chart(fig_3d, use_container_width=True)
-
-# 9. Tabela de Dados
-st.markdown("### 📋 Visualização dos Dados Brutos")
-st.dataframe(df, use_container_width=True)
