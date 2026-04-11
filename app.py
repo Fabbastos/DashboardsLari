@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -36,7 +35,6 @@ def load_data():
 df = load_data()
 
 # 3. Tratamento de Dados
-# Garante que as colunas numéricas sejam tratadas corretamente
 numeric_cols = ['Valor', 'Entrada', 'Segundo_Pagto']
 for col in numeric_cols:
     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -63,7 +61,6 @@ m4.metric("Total Clientes", len(df))
 col1, col2 = st.columns(2)
 
 with col1:
-    # Faturamento por País
     fig_pais = px.bar(
         df.groupby("País")["Valor"].sum().sort_values(ascending=True).reset_index(),
         x="Valor", y="País", orientation="h",
@@ -74,7 +71,6 @@ with col1:
     st.plotly_chart(fig_pais, use_container_width=True)
 
 with col2:
-    # Distribuição por Categoria
     fig_cat = px.pie(
         df, names='Categoria', values='Valor',
         title="Mix de Categorias (Valor)",
@@ -86,7 +82,6 @@ with col2:
 col3, col4 = st.columns(2)
 
 with col3:
-    # Origem de Leads
     fig_origem = px.bar(
         df.groupby("Indicador")["Cliente"].count().reset_index(),
         x="Indicador", y="Cliente",
@@ -97,7 +92,6 @@ with col3:
     st.plotly_chart(fig_origem, use_container_width=True)
 
 with col4:
-    # Visão de Pagamentos
     df_pag = pd.DataFrame({
         'Status': ['Recebido', 'A Receber'],
         'Total': [(df['Entrada'] + df['Segundo_Pagto']).sum(), df['Saldo'].sum()]
