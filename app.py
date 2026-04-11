@@ -122,7 +122,7 @@ def color_ok(val):
 
 # Exibe a tabela formatada
 st.dataframe(
-    df.style.applymap(color_ok, subset=status_cols)
+    df.style.map(color_ok, subset=status_cols)
             .format({'Valor': 'R$ {:.2f}', 'Saldo': 'R$ {:.2f}'}),
     use_container_width=True
 )
