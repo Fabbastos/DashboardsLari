@@ -217,7 +217,16 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
-        st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
+        # Prepara dados do Saldo Devedor: Resumo de Nome e Top 5
+        df_saldo = df_vendas[df_vendas['Saldo Total'] > 0].copy()
+        if not df_saldo.empty:
+            def short_name(name):
+                parts = str(name).split()
+                return f"{parts[0]} {parts[-1]}" if len(parts) > 1 else parts[0]
+            df_saldo['Cliente'] = df_saldo['Cliente'].apply(short_name)
+            df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
+            
+            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Top 5 Saldo Devedor (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+            st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
 
 st.write(""); st.write("")
