@@ -9,39 +9,55 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 COLOR_LEAD, COLOR_KALIL, COLOR_OUTRO, TEXT_COLOR = "#8B4513", "#FFB347", "#5D6D7E", "#FFFFFF"
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
 
-# --- CSS RESPONSIVO ---
+# --- CSS RESPONSIVO E COMPACTO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
-    .block-container {{ padding: 0.2rem 1rem 5rem 1rem !important; }}
+    .block-container {{ padding: 0.5rem 1rem !important; }}
     * {{ color: #FFFFFF !important; }}
-    header {{ visibility: hidden; height: 0px; }}
-    footer {{ visibility: hidden; }}
-    .stDeployButton {{ display:none; }}
-    .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
+    header, footer, .stDeployButton {{ visibility: hidden; display: none; }}
     
-    /* Rótulo do Canal mais compacto */
-    .channel-label {{ 
-        font-size: 0.9rem !important; 
-        font-weight: 800 !important; 
-        margin-top: 5px !important; 
-        margin-bottom: 2px !important; 
-        border-left: 3px solid; 
-        padding-left: 8px;
+    .main-title {{ font-size: 1.1rem !important; font-weight: bold; margin-bottom: 10px; }}
+    
+    /* Container da linha de canal */
+    .channel-row {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 5px;
+        padding: 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }}
+
+    .channel-badge {{
+        min-width: 60px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-align: center;
+    }}
+
+    /* Card de métrica em linha única */
+    .custom-metric {{
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        padding: 4px 10px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-grow: 1;
+        min-width: 150px;
     }}
     
-    /* Reduzindo o tamanho dos Cards de Métrica */
-    div[data-testid="stMetric"] {{ 
-        background-color: #1E293B; 
-        padding: 5px 10px !important; 
-        border: 1px solid #334155; 
-        min-height: 50px !important; 
-    }}
-    div[data-testid="stMetricValue"] {{ font-size: 1rem !important; }}
-    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; }}
+    .metric-label {{ font-size: 0.7rem; color: #94A3B8 !important; text-transform: uppercase; margin-right: 8px; }}
+    .metric-value {{ font-size: 0.85rem; font-weight: bold; }}
+    .metric-delta {{ font-size: 0.75rem; font-weight: bold; margin-left: 5px; }}
     
     @media (max-width: 768px) {{
-        [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 4px; }}
+        .channel-row {{ flex-direction: column; align-items: flex-start; }}
+        .custom-metric {{ width: 100%; }}
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -55,17 +71,13 @@ def load_data():
     try:
         df = pd.read_csv(SHEET_URL)
         df.columns = [c.strip() for c in df.columns]
-
         def clean_currency(value):
             if isinstance(value, str):
                 clean_val = value.replace('€', '').replace('.', '').replace(',', '.').strip()
                 return pd.to_numeric(clean_val, errors='coerce')
             return value
-
         for col in ['Valor', 'Entrada', 'Segundo_Pagto']:
-            if col in df.columns:
-                df[col] = df[col].apply(clean_currency).fillna(0)
-
+            if col in df.columns: df[col] = df[col].apply(clean_currency).fillna(0)
         df['Canal_Agrupado'] = df['Canal'].apply(lambda x: x if x in ['Lead', 'Kalil'] else 'Outro')
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
@@ -73,90 +85,76 @@ def load_data():
         df['Pago Parcelado'] = df.apply(lambda x: x['Total Pago'] if x['Entrada'] < x['Valor'] else 0, axis=1)
         df['Saldo Parcelado'] = df.apply(lambda x: x['Saldo Total'] if x['Entrada'] < x['Valor'] else 0, axis=1)
         return df
-    except:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
 df_base = load_data()
 
 if not df_base.empty:
-    head_col1, head_col2 = st.columns([4, 1])
-    with head_col1:
-        st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
-    with head_col2:
-        meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
-        mes_filtro = st.selectbox("", meses, label_visibility="collapsed")
+    col_t, col_f = st.columns([4, 1])
+    col_t.markdown('<p class="main-title">📊 CRM Executive</p>', unsafe_allow_html=True)
+    meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
+    mes_filtro = col_f.selectbox("", meses, label_visibility="collapsed")
 
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- MÉTRICAS COMPACTAS EM LINHAS SEPARADAS ---
-    def render_metrics(channel_name, color):
-        subset = df[df['Canal_Agrupado'] == channel_name]
-        if subset.empty and channel_name == "Outro": return 
+    # --- FUNÇÃO PARA RENDERIZAR MÉTRICA CUSTOMIZADA EM LINHA ---
+    def custom_metric(label, value, delta=None, delta_color="#4ADE80"):
+        delta_html = f"<span class='metric-delta' style='color:{delta_color} !important;'>({delta})</span>" if delta else ""
+        return f"""
+            <div class="custom-metric">
+                <span class="metric-label">{label}</span>
+                <span class="metric-value">€ {value:,.0f} {delta_html}</span>
+            </div>
+        """
+
+    def render_channel_row(name, color):
+        subset = df[df['Canal_Agrupado'] == name]
+        if subset.empty and name == "Outro": return
         
         fat = subset['Valor'].sum()
-        # Estilização da borda lateral com a cor do canal
-        st.markdown(f"<p class='channel-label' style='border-color:{color}; color:{color}'>{channel_name.upper()}</p>", unsafe_allow_html=True)
-        
-        # 4 colunas para as métricas, ocupando uma linha inteira
-        m1, m2, m3, m4 = st.columns(4)
-        
-        m1.metric("Faturamento", f"€ {fat:,.0f}".replace(',', '.'))
-        
-        def pct(p): return (p / fat * 100) if fat > 0 else 0
         v, p, s = subset['Pago Vista'].sum(), subset['Pago Parcelado'].sum(), subset['Saldo Parcelado'].sum()
-        
-        m2.metric("Pago à Vista", f"€ {v:,.0f}".replace(',', '.'), delta=f"{pct(v):.0f}%")
-        m3.metric("Pago Parcelado", f"€ {p:,.0f}".replace(',', '.'), delta=f"{pct(p):.0f}%")
-        m4.metric("Saldo Parcelado", f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse")
-        st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
+        def pct(val): return f"{((val/fat)*100):.0f}%" if fat > 0 else "0%"
 
-    render_metrics('Lead', COLOR_LEAD)
-    render_metrics('Kalil', COLOR_KALIL)
-    render_metrics('Outro', COLOR_OUTRO)
-    
-    st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
+        # Renderiza a linha completa usando HTML
+        st.markdown(f"""
+            <div class="channel-row">
+                <div class="channel-badge" style="background-color: {color};">{name.upper()}</div>
+                {custom_metric("Total", fat)}
+                {custom_metric("À Vista", v, pct(v))}
+                {custom_metric("Parcelado", p, pct(p))}
+                {custom_metric("Saldo", s, pct(s), "#F87171")}
+            </div>
+        """, unsafe_allow_html=True)
 
-    # --- GRÁFICOS (Mantidos) ---
+    # Renderiza os blocos
+    render_channel_row('Lead', COLOR_LEAD)
+    render_channel_row('Kalil', COLOR_KALIL)
+    render_channel_row('Outro', COLOR_OUTRO)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- GRÁFICOS (Layout 3 colunas compactas) ---
     def estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=200,
-            hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            font=dict(color=TEXT_COLOR, size=10), margin=dict(l=5, r=5, t=30, b=5), height=180,
+            showlegend=False
         )
         return fig
 
-    conf = {'staticPlot': True}
     c1, c2, c3 = st.columns(3)
-
     with c1:
         fd = []
         for c in ["Lead", "Kalil", "Outro"]:
             sub = df[df['Canal_Agrupado'] == c]
             if not sub.empty:
-                fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
-                fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
-        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
-
+                fd.append({'Etapa': 'Lead', 'Canal': c, 'Qtd': len(sub)})
+                fd.append({'Etapa': 'Venda', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
+        st.plotly_chart(estilo(px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil", color_discrete_map=PALETA_MAP)), use_container_width=True)
+    
     with c2:
-        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
-        st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
-
+        st.plotly_chart(estilo(px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas", color_discrete_sequence=[COLOR_LEAD])), use_container_width=True)
+        
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
-
-    # Segunda linha de gráficos
-    c4, c5, c6 = st.columns(3)
-    with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
-
-    with c5:
-        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
-
-    with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
-        st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
+        st.plotly_chart(estilo(px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="País", color_discrete_map=PALETA_MAP)), use_container_width=True)
