@@ -14,7 +14,6 @@ st.markdown(f"""
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.5rem 1rem !important; }}
     
-    /* Força variáveis de texto do Streamlit e cor global */
     :root {{
         --text-color: #FFFFFF !important;
         --secondary-text-color: #94A3B8 !important;
@@ -22,7 +21,6 @@ st.markdown(f"""
     
     * {{ color: #FFFFFF !important; }}
     
-    /* Força cor branca em títulos e textos fora dos gráficos */
     .main-title, .metric-value, .stMarkdown p, label {{
         color: #FFFFFF !important;
     }}
@@ -31,7 +29,6 @@ st.markdown(f"""
     
     .main-title {{ font-size: 1.1rem !important; font-weight: bold; margin-bottom: 10px; }}
     
-    /* Container da linha de canal */
     .channel-row {{
         display: flex;
         align-items: center;
@@ -50,7 +47,6 @@ st.markdown(f"""
         text-align: center;
     }}
 
-    /* Card de métrica em linha única */
     .custom-metric {{
         background-color: #1E293B;
         border: 1px solid #334155;
@@ -67,7 +63,6 @@ st.markdown(f"""
     .metric-value {{ font-size: 0.85rem; font-weight: bold; }}
     .metric-delta {{ font-size: 0.75rem; font-weight: bold; margin-left: 5px; }}
 
-    /* Força fundo escuro e letra branca nos filtros independente do tema do navegador */
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
@@ -112,22 +107,18 @@ def load_data():
 df_base = load_data()
 
 if not df_base.empty:
-    col_t, col_f1, col_f2 = st.columns([2, 1, 1])
+    col_t, col_f1, col_f2 = st.columns()
     col_t.markdown('<p class="main-title">📊 CRM Executive</p>', unsafe_allow_html=True)
     
-    # Filtro de Mês
     meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
     mes_filtro = col_f1.selectbox("", meses, label_visibility="collapsed")
 
-    # Filtro de Outro/Indicador
     outros_unicos = sorted([c for c in df_base['Canal'].dropna().unique() if c not in ['Lead', 'Kalil']])
     opcoes_outro = ["Todos os Outros"] + outros_unicos
     outro_filtro = col_f2.selectbox("", opcoes_outro, label_visibility="collapsed")
 
-    # Aplicação dos Filtros
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     
-    # Lógica Dinâmica do Canal "Outro"
     nome_outro_agrupado = "Outro"
     PALETA_MAP_DYNAMIC = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
 
@@ -139,7 +130,6 @@ if not df_base.empty:
 
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- LÓGICA DE FAIXA ETÁRIA (PARA GRÁFICOS 3 E 5) ---
     def agrupar_idade(idade):
         try:
             idade = int(float(idade))
@@ -184,19 +174,24 @@ if not df_base.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS ---
+    # --- FUNÇÃO DE ESTILIZAÇÃO GLOBAL ---
     def estilo(fig):
         fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color=TEXT_COLOR, size=11),
             title_font_color=TEXT_COLOR,
-            margin=dict(l=5, r=5, t=35, b=5), height=210,
+            margin=dict(l=20, r=20, t=40, b=20), 
+            height=230,
             hovermode=False, 
             legend=dict(
                 orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                font=dict(color=TEXT_COLOR)
-            )
+                font=dict(color=TEXT_COLOR, size=10)
+            ),
+            bargap=0.2
         )
+        fig.update_xaxes(showgrid=False, zeroline=False)
+        fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False)
         return fig
 
     conf = {'staticPlot': True}
@@ -214,34 +209,36 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
-        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD], text_auto=True)
-        fig2.update_traces(textfont=dict(color="white"))
+        df_mix = df_vendas.groupby("Categoria")["Valor"].sum().reset_index().sort_values("Valor", ascending=True)
+        fig2 = px.bar(df_mix, x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", 
+                      color_discrete_sequence=[COLOR_LEAD], text_auto=',.0f')
+        fig2.update_traces(textfont=dict(color="white"), textposition='auto')
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
-        # Gráfico 3: Ajustado para Faixa Etária, Eixo Y Inteiro e Barras Largas
         df_idade_qtd = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"]).size().reset_index(name='Qtd')
         fig3 = px.bar(df_idade_qtd, x="Faixa Etária", y="Qtd", color="Canal_Agrupado", barmode='group', 
                       title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC,
                       category_orders={"Faixa Etária": ordem_faixas})
         fig3.update_xaxes(type='category')
-        fig3.update_yaxes(dtick=1) # Garante apenas números inteiros no eixo Y
-        fig3.update_layout(bargap=0.2) # Barras visualmente mais espessas
+        fig3.update_yaxes(dtick=1, tickformat='d') 
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), 
+                      x="País", y="Qtd", color="Canal_Agrupado", barmode='group', 
+                      title="Clientes por País", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig4.update_xaxes(tickangle=0)
         st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
 
     with c5:
-        # Gráfico 5: Ajustado para Faixa Etária e Barras Largas
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
         fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor", color="Canal_Agrupado", barmode='group', 
                       title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC,
                       category_orders={"Faixa Etária": ordem_faixas})
         fig5.update_xaxes(type='category')
-        fig5.update_layout(bargap=0.2) # Barras visualmente mais espessas
+        fig5.update_traces(texttemplate='%{y:,.0f}', textposition='outside', textfont=dict(size=10))
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
@@ -249,11 +246,13 @@ if not df_base.empty:
         if not df_saldo.empty:
             def short_name(name):
                 parts = str(name).split()
-                return f"{parts[0]} {parts[-1]}" if len(parts) > 1 else parts[0]
+                return f"{parts} {parts[-1]}" if len(parts) > 1 else parts
             df_saldo['Cliente'] = df_saldo['Cliente'].apply(short_name)
             df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
             
-            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Top 5 Devedores (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", 
+                          title="Top 5 Devedores (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+            fig6.update_traces(texttemplate='%{y:,.0f}', textposition='outside', textfont=dict(size=10))
             st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
 
 st.write(""); st.write("")
