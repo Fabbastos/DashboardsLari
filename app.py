@@ -204,16 +204,16 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
 
     with c5:
-        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
@@ -226,7 +226,7 @@ if not df_base.empty:
             df_saldo['Cliente'] = df_saldo['Cliente'].apply(short_name)
             df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
             
-            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal", title="Top 5 Saldo Devedor (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Top 5 Saldo Devedor (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
             st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
 
 st.write(""); st.write("")
