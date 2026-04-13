@@ -172,9 +172,10 @@ if not df_base.empty:
         for c in ["Lead", "Kalil", nome_outro_agrupado]:
             sub = df[df['Canal_Agrupado'] == c]
             if not sub.empty:
-                fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
-                fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
+                fd.append({'Etapa': 'Contatos', 'Canal': c, 'Qtd': len(sub)})
+                fd.append({'Etapa': 'Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig1.update_traces(textfont=dict(color="white"))
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
