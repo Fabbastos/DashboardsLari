@@ -7,7 +7,6 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 
 # --- CORES IDENTIDADE ---
 COLOR_LEAD, COLOR_KALIL, COLOR_OUTRO, TEXT_COLOR = "#8B4513", "#FFB347", "#5D6D7E", "#FFFFFF"
-# Mapeamento fixo para garantir que as cores não mudem
 PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
 
 # --- CSS RESPONSIVO ---
@@ -20,10 +19,29 @@ st.markdown(f"""
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
-    .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-top: 10px; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
-    div[data-testid="stMetric"] {{ background-color: #1E293B; padding: 8px 12px !important; border: 1px solid #334155; min-height: 65px !important; }}
+    
+    /* Rótulo do Canal mais compacto */
+    .channel-label {{ 
+        font-size: 0.9rem !important; 
+        font-weight: 800 !important; 
+        margin-top: 5px !important; 
+        margin-bottom: 2px !important; 
+        border-left: 3px solid; 
+        padding-left: 8px;
+    }}
+    
+    /* Reduzindo o tamanho dos Cards de Métrica */
+    div[data-testid="stMetric"] {{ 
+        background-color: #1E293B; 
+        padding: 5px 10px !important; 
+        border: 1px solid #334155; 
+        min-height: 50px !important; 
+    }}
+    div[data-testid="stMetricValue"] {{ font-size: 1rem !important; }}
+    div[data-testid="stMetricLabel"] {{ font-size: 0.75rem !important; }}
+    
     @media (max-width: 768px) {{
-        [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 8px; }}
+        [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 4px; }}
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -48,9 +66,7 @@ def load_data():
             if col in df.columns:
                 df[col] = df[col].apply(clean_currency).fillna(0)
 
-        # LÓGICA DE AGRUPAMENTO: Se não for Lead ou Kalil, vira "Outro"
         df['Canal_Agrupado'] = df['Canal'].apply(lambda x: x if x in ['Lead', 'Kalil'] else 'Outro')
-
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
         df['Pago Vista'] = df.apply(lambda x: x['Valor'] if x['Entrada'] == x['Valor'] and x['Valor'] > 0 else 0, axis=1)
@@ -63,7 +79,6 @@ def load_data():
 df_base = load_data()
 
 if not df_base.empty:
-    # --- CABEÇALHO ---
     head_col1, head_col2 = st.columns([4, 1])
     with head_col1:
         st.markdown('<p class="main-title">📊 Executive CRM Dashboard</p>', unsafe_allow_html=True)
@@ -74,15 +89,18 @@ if not df_base.empty:
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- MÉTRICAS ---
+    # --- MÉTRICAS COMPACTAS EM LINHAS SEPARADAS ---
     def render_metrics(channel_name, color):
-        # Filtramos pelo canal agrupado
         subset = df[df['Canal_Agrupado'] == channel_name]
-        if subset.empty and channel_name == "Outro": return # Não mostra "Outro" se estiver vazio
+        if subset.empty and channel_name == "Outro": return 
         
         fat = subset['Valor'].sum()
-        st.markdown(f"<p class='channel-label' style='color:{color}'>{channel_name}</p>", unsafe_allow_html=True)
+        # Estilização da borda lateral com a cor do canal
+        st.markdown(f"<p class='channel-label' style='border-color:{color}; color:{color}'>{channel_name.upper()}</p>", unsafe_allow_html=True)
+        
+        # 4 colunas para as métricas, ocupando uma linha inteira
         m1, m2, m3, m4 = st.columns(4)
+        
         m1.metric("Faturamento", f"€ {fat:,.0f}".replace(',', '.'))
         
         def pct(p): return (p / fat * 100) if fat > 0 else 0
@@ -91,19 +109,19 @@ if not df_base.empty:
         m2.metric("Pago à Vista", f"€ {v:,.0f}".replace(',', '.'), delta=f"{pct(v):.0f}%")
         m3.metric("Pago Parcelado", f"€ {p:,.0f}".replace(',', '.'), delta=f"{pct(p):.0f}%")
         m4.metric("Saldo Parcelado", f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse")
+        st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 
-    # Renderiza os 3 blocos
     render_metrics('Lead', COLOR_LEAD)
     render_metrics('Kalil', COLOR_KALIL)
     render_metrics('Outro', COLOR_OUTRO)
     
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS ---
+    # --- GRÁFICOS (Mantidos) ---
     def estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=210,
+            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=200,
             hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         return fig
@@ -112,7 +130,6 @@ if not df_base.empty:
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        # Funil usando a nova coluna agrupada
         fd = []
         for c in ["Lead", "Kalil", "Outro"]:
             sub = df[df['Canal_Agrupado'] == c]
@@ -130,6 +147,7 @@ if not df_base.empty:
         fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
+    # Segunda linha de gráficos
     c4, c5, c6 = st.columns(3)
     with c4:
         fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
