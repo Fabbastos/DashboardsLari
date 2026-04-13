@@ -242,17 +242,25 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
+        # Prepara dados do Saldo Devedor: Resumo de Nome e Top 5
         df_saldo = df_vendas[df_vendas['Saldo Total'] > 0].copy()
         if not df_saldo.empty:
-            def short_name(name):
-                parts = str(name).split()
-                return f"{parts} {parts[-1]}" if len(parts) > 1 else parts
-            df_saldo['Cliente'] = df_saldo['Cliente'].apply(short_name)
+            def treat_name(name):
+                # Limpa resquícios de formatação de lista (colchetes/aspas) e trunca o nome
+                clean_name = str(name).replace("[", "").replace("]", "").replace("'", "").replace(",", "")
+                return (clean_name[:17] + '..') if len(clean_name) > 18 else clean_name
+
+            df_saldo['Cliente'] = df_saldo['Cliente'].apply(treat_name)
             df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
             
             fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", 
-                          title="Top 5 Devedores (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
-            fig6.update_traces(texttemplate='%{y:,.0f}', textposition='outside', textfont=dict(size=10))
+                          title="Top 5 Devedores (€)", color_discrete_map=PALETA_MAP_DYNAMIC,
+                          text_auto=True)
+            
+            # Ajustes de legibilidade do eixo X e margens
+            fig6.update_xaxes(tickangle=0)
+            fig6.update_layout(margin=dict(l=5, r=5, t=35, b=80)) # b=80 garante que os nomes caibam
+            
             st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
-
+            
 st.write(""); st.write("")
