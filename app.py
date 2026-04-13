@@ -53,6 +53,16 @@ st.markdown(f"""
     .metric-label {{ font-size: 0.7rem; color: #94A3B8 !important; text-transform: uppercase; margin-right: 8px; }}
     .metric-value {{ font-size: 0.85rem; font-weight: bold; }}
     .metric-delta {{ font-size: 0.75rem; font-weight: bold; margin-left: 5px; }}
+
+    /* Força fundo escuro e letra branca nos filtros independente do tema do navegador */
+    div[data-baseweb="select"] > div {{
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+    }}
+    div[data-baseweb="popover"] * {{
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+    }}
     
     @media (max-width: 768px) {{
         .channel-row {{ flex-direction: column; align-items: flex-start; }}
