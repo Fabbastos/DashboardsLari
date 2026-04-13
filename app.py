@@ -7,7 +7,6 @@ st.set_page_config(page_title="Executive CRM", layout="wide")
 
 # --- CORES IDENTIDADE ---
 COLOR_LEAD, COLOR_KALIL, COLOR_OUTRO, TEXT_COLOR = "#8B4513", "#FFB347", "#5D6D7E", "#FFFFFF"
-PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
 
 # --- CSS RESPONSIVO E COMPACTO ---
 st.markdown(f"""
@@ -90,12 +89,33 @@ def load_data():
 df_base = load_data()
 
 if not df_base.empty:
-    col_t, col_f = st.columns([4, 1])
+    col_t, col_f1, col_f2 = st.columns([2, 1, 1])
     col_t.markdown('<p class="main-title">📊 CRM Executive</p>', unsafe_allow_html=True)
+    
+    # Filtro de Mês
     meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
-    mes_filtro = col_f.selectbox("", meses, label_visibility="collapsed")
+    mes_filtro = col_f1.selectbox("", meses, label_visibility="collapsed")
 
+    # Filtro de Outro/Indicador
+    outros_unicos = sorted([c for c in df_base['Canal'].dropna().unique() if c not in ['Lead', 'Kalil']])
+    opcoes_outro = ["Todos os Outros"] + outros_unicos
+    outro_filtro = col_f2.selectbox("", opcoes_outro, label_visibility="collapsed")
+
+    # Aplicação dos Filtros
     df = df_base if mes_filtro == "Total" else df_base[df_base['Mês'] == mes_filtro]
+    
+    # Lógica Dinâmica do Canal "Outro"
+    nome_outro_agrupado = "Outro"
+    PALETA_MAP_DYNAMIC = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
+
+    if outro_filtro != "Todos os Outros":
+        # Filtra mantendo apenas Lead, Kalil e a pessoa específica selecionada
+        df = df[df['Canal'].isin(['Lead', 'Kalil', outro_filtro])].copy()
+        # Substitui a tag "Outro" pelo nome da pessoa na coluna de agrupamento para que os gráficos e cards atualizem
+        df.loc[df['Canal'] == outro_filtro, 'Canal_Agrupado'] = outro_filtro
+        nome_outro_agrupado = outro_filtro
+        PALETA_MAP_DYNAMIC = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, outro_filtro: COLOR_OUTRO}
+
     df_vendas = df[df['Total Pago'] > 0].copy()
 
     # --- FUNÇÃO PARA RENDERIZAR MÉTRICA CUSTOMIZADA EM LINHA ---
@@ -130,11 +150,11 @@ if not df_base.empty:
     # Renderiza os blocos
     render_channel_row('Lead', COLOR_LEAD)
     render_channel_row('Kalil', COLOR_KALIL)
-    render_channel_row('Outro', COLOR_OUTRO)
+    render_channel_row(nome_outro_agrupado, COLOR_OUTRO)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
- # --- GRÁFICOS ---
+    # --- GRÁFICOS ---
     def estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -147,14 +167,14 @@ if not df_base.empty:
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        # Funil usando a nova coluna agrupada
+        # Funil usando a nova coluna agrupada dinâmica
         fd = []
-        for c in ["Lead", "Kalil", "Outro"]:
+        for c in ["Lead", "Kalil", nome_outro_agrupado]:
             sub = df[df['Canal_Agrupado'] == c]
             if not sub.empty:
                 fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
                 fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
-        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
+        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
@@ -162,20 +182,20 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
+        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
+        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
 
     with c5:
-        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
+        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
+        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
 
 st.write(""); st.write("")
