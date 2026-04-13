@@ -177,3 +177,5 @@ if not df_base.empty:
     with c6:
         fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
         st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
+
+st.write(""); st.write("")
