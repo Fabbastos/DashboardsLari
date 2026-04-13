@@ -107,7 +107,7 @@ def load_data():
 df_base = load_data()
 
 if not df_base.empty:
-    col_t, col_f1, col_f2 = st.columns()
+    col_t, col_f1, col_f2 = st.columns([2, 1, 1])
     col_t.markdown('<p class="main-title">📊 CRM Executive</p>', unsafe_allow_html=True)
     
     meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
