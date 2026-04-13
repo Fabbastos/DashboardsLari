@@ -13,7 +13,20 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
     .block-container {{ padding: 0.5rem 1rem !important; }}
+    
+    /* Força variáveis de texto do Streamlit e cor global */
+    :root {{
+        --text-color: #FFFFFF !important;
+        --secondary-text-color: #94A3B8 !important;
+    }}
+    
     * {{ color: #FFFFFF !important; }}
+    
+    /* Força cor branca em títulos e textos fora dos gráficos */
+    .main-title, .metric-value, .stMarkdown p, label {{
+        color: #FFFFFF !important;
+    }}
+
     header, footer, .stDeployButton {{ visibility: hidden; display: none; }}
     
     .main-title {{ font-size: 1.1rem !important; font-weight: bold; margin-bottom: 10px; }}
@@ -119,16 +132,13 @@ if not df_base.empty:
     PALETA_MAP_DYNAMIC = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
 
     if outro_filtro != "Todos os Outros":
-        # Filtra mantendo apenas Lead, Kalil e a pessoa específica selecionada
         df = df[df['Canal'].isin(['Lead', 'Kalil', outro_filtro])].copy()
-        # Substitui a tag "Outro" pelo nome da pessoa na coluna de agrupamento para que os gráficos e cards atualizem
         df.loc[df['Canal'] == outro_filtro, 'Canal_Agrupado'] = outro_filtro
         nome_outro_agrupado = outro_filtro
         PALETA_MAP_DYNAMIC = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, outro_filtro: COLOR_OUTRO}
 
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # --- FUNÇÃO PARA RENDERIZAR MÉTRICA CUSTOMIZADA EM LINHA ---
     def custom_metric(label, value, delta=None, delta_color="#4ADE80"):
         delta_html = f"<span class='metric-delta' style='color:{delta_color} !important;'>({delta})</span>" if delta else ""
         return f"""
@@ -141,12 +151,9 @@ if not df_base.empty:
     def render_channel_row(name, color):
         subset = df[df['Canal_Agrupado'] == name]
         if subset.empty and name == "Outro": return
-        
         fat = subset['Valor'].sum()
         v, p, s = subset['Pago Vista'].sum(), subset['Pago Parcelado'].sum(), subset['Saldo Parcelado'].sum()
         def pct(val): return f"{((val/fat)*100):.0f}%" if fat > 0 else "0%"
-
-        # Renderiza a linha completa usando HTML
         st.markdown(f"""
             <div class="channel-row">
                 <div class="channel-badge" style="background-color: {color};">{name.upper()}</div>
@@ -157,7 +164,6 @@ if not df_base.empty:
             </div>
         """, unsafe_allow_html=True)
 
-    # Renderiza os blocos
     render_channel_row('Lead', COLOR_LEAD)
     render_channel_row('Kalil', COLOR_KALIL)
     render_channel_row(nome_outro_agrupado, COLOR_OUTRO)
@@ -168,8 +174,14 @@ if not df_base.empty:
     def estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=210,
-            hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            font=dict(color=TEXT_COLOR, size=11),
+            title_font_color=TEXT_COLOR,
+            margin=dict(l=5, r=5, t=35, b=5), height=210,
+            hovermode=False, 
+            legend=dict(
+                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                font=dict(color=TEXT_COLOR)
+            )
         )
         return fig
 
@@ -177,7 +189,6 @@ if not df_base.empty:
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        # Funil usando a nova coluna agrupada dinâmica
         fd = []
         for c in ["Lead", "Kalil", nome_outro_agrupado]:
             sub = df[df['Canal_Agrupado'] == c]
