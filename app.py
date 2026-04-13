@@ -6,7 +6,7 @@ import plotly.express as px
 st.set_page_config(page_title="Executive CRM", layout="wide")
 
 # --- CORES IDENTIDADE ---
-COLOR_LEAD, COLOR_KALIL, COLOR_OUTRO, TEXT_COLOR = "#8B4513", "#FFB347", "#99897B", "#FFFFFF"
+COLOR_LEAD, COLOR_KALIL, COLOR_OUTRO, TEXT_COLOR = "#8B4513", "#FFB347", "#C06C4D", "#FFFFFF"
 
 # --- CSS RESPONSIVO E COMPACTO ---
 st.markdown(f"""
