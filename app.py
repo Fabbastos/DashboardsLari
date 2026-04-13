@@ -179,7 +179,7 @@ if not df_base.empty:
             margin=dict(l=5, r=5, t=35, b=5), height=210,
             hovermode=False, 
             legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                orientation="h", yanchor="bottom", y=1.1, xanchor="right", x=1,
                 font=dict(color=TEXT_COLOR)
             )
         )
@@ -190,7 +190,7 @@ if not df_base.empty:
 
     with c1:
         fd = []
-        for c in ["Lead", "Kalil", nome_outro_agrupado]:
+        for c in ["Lead", "Kalil", name_outro_agrupado]:
             sub = df[df['Canal_Agrupado'] == c]
             if not sub.empty:
                 fd.append({'Etapa': 'Contatos', 'Canal': c, 'Qtd': len(sub)})
