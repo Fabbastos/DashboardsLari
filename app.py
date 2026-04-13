@@ -139,6 +139,20 @@ if not df_base.empty:
 
     df_vendas = df[df['Total Pago'] > 0].copy()
 
+    # --- LÓGICA DE FAIXA ETÁRIA (PARA GRÁFICOS 3 E 5) ---
+    def agrupar_idade(idade):
+        try:
+            idade = int(float(idade))
+            if idade <= 25: return "20-25"
+            if idade <= 30: return "26-30"
+            if idade <= 35: return "31-35"
+            if idade <= 40: return "36-40"
+            return "40+"
+        except: return "N/D"
+
+    df_vendas['Faixa Etária'] = df_vendas['Idade'].apply(agrupar_idade)
+    ordem_faixas = ["20-25", "26-30", "31-35", "36-40", "40+"]
+
     def custom_metric(label, value, delta=None, delta_color="#4ADE80"):
         delta_html = f"<span class='metric-delta' style='color:{delta_color} !important;'>({delta})</span>" if delta else ""
         return f"""
@@ -205,11 +219,14 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
-        # Gráfico 3: Eixo categórico e bargap reduzido para barras mais largas
-        df_idade_qtd = df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd')
-        fig3 = px.bar(df_idade_qtd, x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC)
-        fig3.update_xaxes(type='category') # Força o eixo X a ser categórico (tipo string)
-        fig3.update_layout(bargap=0.15) # Aumenta a largura das barras
+        # Gráfico 3: Ajustado para Faixa Etária, Eixo Y Inteiro e Barras Largas
+        df_idade_qtd = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"]).size().reset_index(name='Qtd')
+        fig3 = px.bar(df_idade_qtd, x="Faixa Etária", y="Qtd", color="Canal_Agrupado", barmode='group', 
+                      title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC,
+                      category_orders={"Faixa Etária": ordem_faixas})
+        fig3.update_xaxes(type='category')
+        fig3.update_yaxes(dtick=1) # Garante apenas números inteiros no eixo Y
+        fig3.update_layout(bargap=0.2) # Barras visualmente mais espessas
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
@@ -218,11 +235,13 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
 
     with c5:
-        # Gráfico 5: Eixo categórico e bargap reduzido para barras mais largas
-        df_idade_valor = df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index()
-        fig5 = px.bar(df_idade_valor, x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
-        fig5.update_xaxes(type='category') # Força o eixo X a ser categórico (tipo string)
-        fig5.update_layout(bargap=0.15) # Aumenta a largura das barras
+        # Gráfico 5: Ajustado para Faixa Etária e Barras Largas
+        df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
+        fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor", color="Canal_Agrupado", barmode='group', 
+                      title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC,
+                      category_orders={"Faixa Etária": ordem_faixas})
+        fig5.update_xaxes(type='category')
+        fig5.update_layout(bargap=0.2) # Barras visualmente mais espessas
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
