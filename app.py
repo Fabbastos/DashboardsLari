@@ -6,10 +6,11 @@ import plotly.express as px
 st.set_page_config(page_title="Executive CRM", layout="wide")
 
 # --- CORES IDENTIDADE ---
-COLOR_LEAD, COLOR_KALIL, TEXT_COLOR = "#8B4513", "#FFB347", "#FFFFFF"
-PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL}
+COLOR_LEAD, COLOR_KALIL, COLOR_OUTRO, TEXT_COLOR = "#8B4513", "#FFB347", "#5D6D7E", "#FFFFFF"
+# Mapeamento fixo para garantir que as cores não mudem
+PALETA_MAP = {"Lead": COLOR_LEAD, "Kalil": COLOR_KALIL, "Outro": COLOR_OUTRO}
 
-# --- CSS RESPONSIVO + FILTRO ESCURO MOBILE ---
+# --- CSS RESPONSIVO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0F172A; }}
@@ -18,69 +19,11 @@ st.markdown(f"""
     header {{ visibility: hidden; height: 0px; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
-    
     .main-title {{ font-size: 1.2rem !important; font-weight: bold; margin: 10px 0px !important; }}
-    .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
-
-    /* Estilização dos Cards */
-    div[data-testid="stMetric"] {{ 
-        background-color: #1E293B; 
-        padding: 8px 12px !important; 
-        border: 1px solid #334155; 
-        min-height: 65px !important;
-        height: auto !important;
-    }}
-    
-    div[data-testid="stMetric"] > div {{
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: wrap !important;
-        align-items: baseline !important;
-        gap: 5px 10px !important;
-    }}
-
-    div[data-testid="stMetricLabel"] {{ 
-        font-size: 0.75rem !important; 
-        color: #CBD5E1 !important; 
-        margin-bottom: 2px !important;
-        width: 100%;
-    }}
-    
-    div[data-testid="stMetricValue"] {{ 
-        font-size: 1.1rem !important; 
-        font-weight: bold; 
-        line-height: 1.1;
-        white-space: nowrap;
-    }}
-    
-    div[data-testid="stMetricDelta"] {{ 
-        font-size: 0.85rem !important; 
-        font-weight: 500 !important;
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-    }}
-
-    /* FILTRO ESCURO MOBILE E AJUSTES */
+    .channel-label {{ font-size: 1.1rem !important; font-weight: 800 !important; margin-top: 10px; margin-bottom: 5px !important; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; }}
+    div[data-testid="stMetric"] {{ background-color: #1E293B; padding: 8px 12px !important; border: 1px solid #334155; min-height: 65px !important; }}
     @media (max-width: 768px) {{
-        .stApp {{
-            background-color: #070B14 !important; /* Fundo ainda mais escuro no mobile */
-        }}
-        [data-testid="stMetric"] {{
-            background-color: #131C2E !important; /* Cards mais profundos */
-            border-color: #1E293B !important;
-        }}
-        [data-testid="column"] {{ 
-            width: 100% !important; 
-            flex: 1 1 100% !important; 
-            margin-bottom: 8px; 
-        }}
-        div[data-testid="stMetricValue"] {{ font-size: 1.0rem !important; }}
-        
-        /* Aplica uma leve dessaturação para reduzir cansaço visual no brilho do celular */
-        img, .stPlotlyChart {{
-            filter: brightness(0.9) contrast(1.1);
-        }}
+        [data-testid="column"] {{ width: 100% !important; flex: 1 1 100% !important; margin-bottom: 8px; }}
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -104,6 +47,9 @@ def load_data():
         for col in ['Valor', 'Entrada', 'Segundo_Pagto']:
             if col in df.columns:
                 df[col] = df[col].apply(clean_currency).fillna(0)
+
+        # LÓGICA DE AGRUPAMENTO: Se não for Lead ou Kalil, vira "Outro"
+        df['Canal_Agrupado'] = df['Canal'].apply(lambda x: x if x in ['Lead', 'Kalil'] else 'Outro')
 
         df['Total Pago'] = df['Entrada'] + df['Segundo_Pagto']
         df['Saldo Total'] = df['Valor'] - df['Total Pago']
@@ -129,28 +75,28 @@ if not df_base.empty:
     df_vendas = df[df['Total Pago'] > 0].copy()
 
     # --- MÉTRICAS ---
-    def render_metrics(channel, color):
-        subset = df[df['Canal'] == channel]
-        fat = subset['Valor'].sum()
-        st.markdown(f"<p class='channel-label' style='color:{color}'>{channel}</p>", unsafe_allow_html=True)
-        m1, m2, m3, m4 = st.columns(4)
+    def render_metrics(channel_name, color):
+        # Filtramos pelo canal agrupado
+        subset = df[df['Canal_Agrupado'] == channel_name]
+        if subset.empty and channel_name == "Outro": return # Não mostra "Outro" se estiver vazio
         
+        fat = subset['Valor'].sum()
+        st.markdown(f"<p class='channel-label' style='color:{color}'>{channel_name}</p>", unsafe_allow_html=True)
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("Faturamento", f"€ {fat:,.0f}".replace(',', '.'))
         
-        def pct(parte):
-            return (parte / fat * 100) if fat > 0 else 0
-
-        v = subset['Pago Vista'].sum()
+        def pct(p): return (p / fat * 100) if fat > 0 else 0
+        v, p, s = subset['Pago Vista'].sum(), subset['Pago Parcelado'].sum(), subset['Saldo Parcelado'].sum()
+        
         m2.metric("Pago à Vista", f"€ {v:,.0f}".replace(',', '.'), delta=f"{pct(v):.0f}%")
-        
-        p = subset['Pago Parcelado'].sum()
         m3.metric("Pago Parcelado", f"€ {p:,.0f}".replace(',', '.'), delta=f"{pct(p):.0f}%")
-        
-        s = subset['Saldo Parcelado'].sum()
         m4.metric("Saldo Parcelado", f"€ {s:,.0f}".replace(',', '.'), delta=f"{pct(s):.0f}%", delta_color="inverse")
 
+    # Renderiza os 3 blocos
     render_metrics('Lead', COLOR_LEAD)
     render_metrics('Kalil', COLOR_KALIL)
+    render_metrics('Outro', COLOR_OUTRO)
+    
     st.markdown("<hr>", unsafe_allow_html=True)
 
     # --- GRÁFICOS ---
@@ -166,13 +112,14 @@ if not df_base.empty:
     c1, c2, c3 = st.columns(3)
 
     with c1:
+        # Funil usando a nova coluna agrupada
         fd = []
-        for c in ["Lead", "Kalil"]:
-            sub = df[df['Canal'] == c]
-            fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
-            fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
+        for c in ["Lead", "Kalil", "Outro"]:
+            sub = df[df['Canal_Agrupado'] == c]
+            if not sub.empty:
+                fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
+                fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
-        fig1.update_traces(textinfo="value+percent initial")
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
@@ -180,22 +127,18 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
-        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
-        fig3.update_xaxes(categoryorder='category ascending')
+        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        fig4 = px.bar(df_vendas.groupby(["País", "Canal"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
+        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
         st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
 
     with c5:
-        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
-        fig5.update_xaxes(categoryorder='category ascending')
+        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
-        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
+        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
         st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
-
-st.write(""); st.write("")
