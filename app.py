@@ -200,11 +200,17 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
 
     with c2:
-        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
+        # Gráfico 2: Adicionado text_auto=True e ajuste da cor da fonte para exibir os rótulos de dados
+        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD], text_auto=True)
+        fig2.update_traces(textfont=dict(color="white"))
         st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
 
     with c3:
         fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC)
+        # Gráfico 3: Aumentado a largura das barras (reduzindo o bargap) e fixado os eixos para números inteiros
+        fig3.update_layout(bargap=0.1)
+        fig3.update_xaxes(dtick=1)
+        fig3.update_yaxes(dtick=1)
         st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
@@ -214,6 +220,8 @@ if not df_base.empty:
 
     with c5:
         fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+        # Gráfico 5: Aumentado a largura das barras (reduzindo o bargap)
+        fig5.update_layout(bargap=0.1)
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
