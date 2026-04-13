@@ -226,7 +226,7 @@ if not df_base.empty:
             df_saldo['Cliente'] = df_saldo['Cliente'].apply(short_name)
             df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
             
-            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Top 5 Saldo Devedor (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
+            fig6 = px.bar(df_saldo, x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Top 5 Devedores (€)", color_discrete_map=PALETA_MAP_DYNAMIC)
             st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
 
 st.write(""); st.write("")
