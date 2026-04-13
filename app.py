@@ -134,27 +134,46 @@ if not df_base.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- GRÁFICOS (Layout 3 colunas compactas) ---
+ # --- GRÁFICOS ---
     def estilo(fig):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=10), margin=dict(l=5, r=5, t=30, b=5), height=180,
-            showlegend=False
+            font=dict(color=TEXT_COLOR, size=11), margin=dict(l=5, r=5, t=35, b=5), height=210,
+            hovermode=False, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         return fig
 
+    conf = {'staticPlot': True}
     c1, c2, c3 = st.columns(3)
+
     with c1:
+        # Funil usando a nova coluna agrupada
         fd = []
         for c in ["Lead", "Kalil", "Outro"]:
             sub = df[df['Canal_Agrupado'] == c]
             if not sub.empty:
-                fd.append({'Etapa': 'Lead', 'Canal': c, 'Qtd': len(sub)})
-                fd.append({'Etapa': 'Venda', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
-        st.plotly_chart(estilo(px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil", color_discrete_map=PALETA_MAP)), use_container_width=True)
-    
+                fd.append({'Etapa': '1. Contatos', 'Canal': c, 'Qtd': len(sub)})
+                fd.append({'Etapa': '2. Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
+        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", color_discrete_map=PALETA_MAP)
+        st.plotly_chart(estilo(fig1), use_container_width=True, config=conf)
+
     with c2:
-        st.plotly_chart(estilo(px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas", color_discrete_sequence=[COLOR_LEAD])), use_container_width=True)
-        
+        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index(), x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD])
+        st.plotly_chart(estilo(fig2), use_container_width=True, config=conf)
+
     with c3:
-        st.plotly_chart(estilo(px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="País", color_discrete_map=PALETA_MAP)), use_container_width=True)
+        fig3 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="Idade", y="Qtd", color="Canal_Agrupado", barmode='group', title="Vendas por Idade", color_discrete_map=PALETA_MAP)
+        st.plotly_chart(estilo(fig3), use_container_width=True, config=conf)
+
+    c4, c5, c6 = st.columns(3)
+    with c4:
+        fig4 = px.bar(df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd'), x="País", y="Qtd", color="Canal_Agrupado", barmode='group', title="Clientes por País", color_discrete_map=PALETA_MAP)
+        st.plotly_chart(estilo(fig4), use_container_width=True, config=conf)
+
+    with c5:
+        fig5 = px.bar(df_vendas.groupby(["Idade", "Canal_Agrupado"])["Valor"].sum().reset_index(), x="Idade", y="Valor", color="Canal_Agrupado", barmode='group', title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP)
+        st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
+
+    with c6:
+        fig6 = px.bar(df_vendas[df_vendas['Saldo Total'] > 0], x="Cliente", y="Saldo Total", color="Canal_Agrupado", title="Saldo Devedor por Cliente (€)", color_discrete_map=PALETA_MAP)
+        st.plotly_chart(estilo(fig6), use_container_width=True, config=conf)
