@@ -255,34 +255,48 @@ if not df_base.empty:
         # 1. Agrupamos os dados por País e Canal
         df_pais = df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd')
         
-        # 2. ORDENAÇÃO CRUCIAL: Ordenamos a 'Qtd' de forma CRESCENTE (menor para o maior)
-        # Isso garante que o menor pedaço seja desenhado primeiro (na esquerda)
+        # 2. Ordenação para o empilhamento (Menor na esquerda, Maior na direita)
         df_pais = df_pais.sort_values(by=["País", "Qtd"], ascending=[True, True])
 
-        # Mantemos a ordem dos países pelo volume total (o maior país no topo)
-        pais_order = df_vendas.groupby("País").size().sort_values(ascending=False).index.tolist()
+        # 3. Calculamos o total por país para exibir fora da barra
+        df_totais = df_vendas.groupby("País").size().reset_index(name='Total')
+        
+        # Definimos a ordem dos países pelo volume total (Ranking)
+        pais_order = df_totais.sort_values("Total", ascending=False)["País"].tolist()
 
+        # 4. Criamos o gráfico
         fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado",
                       barmode='stack', orientation='h', title="Clientes por País",
                       color_discrete_map=PALETA_MAP_DYNAMIC, 
-                      category_orders={"País": pais_order},
-                      text="Qtd")
+                      category_orders={"País": pais_order})
 
-        # 3. Estética dos Rótulos
+        # 5. ADICIONAR O TOTAL FORA DA BARRA
+        # Criamos um dicionário para mapear o total de cada país rapidamente
+        mapa_totais = dict(zip(df_totais['País'], df_totais['Total']))
+
+        # Adicionamos os totais como anotações no final de cada barra combinada
+        for pais in mapa_totais:
+            fig4.add_annotation(
+                x=mapa_totais[pais], # Posição X é o total
+                y=pais,              # Posição Y é o nome do país
+                text=str(mapa_totais[pais]), # O texto é o número total
+                showarrow=False,
+                xanchor='left',      # Alinha o texto à esquerda do ponto X (fica para fora)
+                xshift=10,           # Empurra o texto 10 pixels para a direita da barra
+                font=dict(color="white", size=12)
+            )
+
+        # 6. Ajustes de Estilo (Removi o texto de dentro para focar no total fora)
         fig4.update_traces(
-            textposition='inside',    # Números dentro dos segmentos
-            textangle=0,              # Sempre na horizontal
-            textfont_color="white",   # Texto sempre branco
-            insidetextfont=dict(color="white"),
-            cliponaxis=False
+            texttemplate='', # Remove números de dentro dos pedaços para não poluir
+            hoverinfo='all'  # Mantém a info ao passar o mouse
         )
 
-        # Ajuste do limite do eixo X para os nomes dos países e rótulos respirarem
-        max_total = df_vendas.groupby("País").size().max()
-        fig4.update_xaxes(range=[0, max_total * 1.15])
+        # Ajuste do eixo X para dar espaço ao número do total
+        max_total = df_totais['Total'].max()
+        fig4.update_xaxes(range=[0, max_total * 1.3])
         
-        st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)        
-    
+        st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)
     with c5:
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
         fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor",
