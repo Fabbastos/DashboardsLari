@@ -252,31 +252,34 @@ if not df_base.empty:
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        # C4 - RÓTULOS BRANCOS E RETOS
+        # 1. Agrupamos e ordenamos para que os maiores valores de Qtd dentro de cada país fiquem em ordem
         df_pais = df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd')
-        pais_order = df_vendas.groupby("País").size().sort_values(ascending=False).index.tolist()
-        
-        fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado",
-                    barmode='stack', orientation='h', title="Clientes por País",
-                    color_discrete_map=PALETA_MAP_DYNAMIC, category_orders={"País": pais_order},
-                    text="Qtd")
+        df_pais = df_pais.sort_values(["País", "Qtd"], ascending=[True, False]) # Ordena por país e depois Qtd decrescente
 
-        # Ajuste para garantir cor branca e impedir rotação
+        # Ordem dos países (baseado no total) para manter o ranking correto
+        pais_order = df_vendas.groupby("País").size().sort_values(ascending=False).index.tolist()
+
+        fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado",
+                      barmode='stack', orientation='h', title="Clientes por País",
+                      color_discrete_map=PALETA_MAP_DYNAMIC, 
+                      category_orders={"País": pais_order},
+                      text="Qtd")
+
+        # Ajustes de estilo: Branco, Reto e Força o texto para dentro (insidetext) 
+        # para evitar que fiquem desalinhados fora da barra
         fig4.update_traces(
-            textposition='auto',       # 'auto' funciona melhor em barras empilhadas para evitar sobreposição
-            textangle=0,               # Garante que o número não gire
-            textfont_color="white",    # Força branco
+            textposition='inside',     # Mantém os números dentro dos pedaços da barra
+            textangle=0,               # Não rotaciona
+            textfont_color="white",    # Cor branca
             insidetextfont=dict(color="white"),
-            outsidetextfont=dict(color="white"),
             cliponaxis=False
         )
 
-        # Aumentamos um pouco o range do eixo X para o rótulo final não cortar
-        max_total = df_pais.groupby("País")["Qtd"].sum().max()
-        fig4.update_xaxes(range=[0, max_total * 1.3])
+        # Ajuste do eixo X para dar respiro
+        max_total = df_vendas.groupby("País").size().max()
+        fig4.update_xaxes(range=[0, max_total * 1.1])
         
         st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)
-    
     with c5:
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
         fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor",
