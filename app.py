@@ -234,14 +234,48 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
 
     with c2:
-        df_mix = df_vendas.groupby("Categoria")["Valor"].sum().reset_index().sort_values("Valor")
-        fig2 = px.bar(df_mix, x="Valor", y="Categoria", orientation='h',
-                      title="Mix de Vendas (€)", color_discrete_sequence=[COLOR_LEAD],
-                      text=df_mix["Valor"].apply(format_number))
-        fig2.update_traces(textposition='outside')
-        fig2.update_xaxes(range=[0, df_mix["Valor"].max() * 1.3]) # Margem para o texto
-        st.plotly_chart(estilo(fig2, show_x=False), use_container_width=True, config=conf)
+        # 1. Agrupamos por Categoria E Canal para ter a divisão de cores
+        df_mix = df_vendas.groupby(["Categoria", "Canal_Agrupado"])["Valor"].sum().reset_index()
+        
+        # 2. Ordenação: Menor na esquerda, Maior na direita (dentro da barra)
+        df_mix = df_mix.sort_values(by=["Categoria", "Valor"], ascending=[True, True])
 
+        # 3. Calculamos o total por Categoria para exibir fora da barra
+        df_totais_cat = df_vendas.groupby("Categoria")["Valor"].sum().reset_index(name='Total')
+        
+        # Ordenamos as categorias para que a que mais faturou fique no topo
+        cat_order = df_totais_cat.sort_values("Total", ascending=True)["Categoria"].tolist()
+
+        # 4. Criamos o gráfico empilhado
+        fig2 = px.bar(df_mix, x="Valor", y="Categoria", color="Canal_Agrupado",
+                        orientation='h', title="Mix de Vendas (€)",
+                        color_discrete_map=PALETA_MAP_DYNAMIC,
+                        category_orders={"Categoria": cat_order},
+                        barmode='stack')
+
+        # 5. Adicionamos o Total (€) fora da barra
+        mapa_totais_cat = dict(zip(df_totais_cat['Categoria'], df_totais_cat['Total']))
+
+        for cat in mapa_totais_cat:
+            valor_formatado = format_number(mapa_totais_cat[cat])
+            fig2.add_annotation(
+                x=mapa_totais_cat[cat],
+                y=cat,
+                text=f"€ {valor_formatado}",
+                showarrow=False,
+                xanchor='left',
+                xshift=10,
+                font=dict(color="white", size=11)
+            )
+
+        # 6. Limpeza visual e ajustes de estilo
+        fig2.update_traces(texttemplate='') # Remove números de dentro dos pedaços
+        
+        # Margem no eixo X para o texto não cortar
+        max_valor = df_totais_cat['Total'].max()
+        fig2.update_xaxes(range=[0, max_valor * 1.3])
+        
+        st.plotly_chart(estilo(fig2, show_x=False), use_container_width=True, config=conf)
     with c3:
         # C3 - SEM RÓTULOS (TEXTO)
         df_idade_qtd = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"]).size().reset_index(name='Qtd')
