@@ -252,11 +252,14 @@ if not df_base.empty:
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        # 1. Agrupamos e ordenamos para que os maiores valores de Qtd dentro de cada país fiquem em ordem
+        # 1. Agrupamos os dados por País e Canal
         df_pais = df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd')
-        df_pais = df_pais.sort_values(["País", "Qtd"], ascending=[True, False]) # Ordena por país e depois Qtd decrescente
+        
+        # 2. ORDENAÇÃO CRUCIAL: Ordenamos a 'Qtd' de forma CRESCENTE (menor para o maior)
+        # Isso garante que o menor pedaço seja desenhado primeiro (na esquerda)
+        df_pais = df_pais.sort_values(by=["País", "Qtd"], ascending=[True, True])
 
-        # Ordem dos países (baseado no total) para manter o ranking correto
+        # Mantemos a ordem dos países pelo volume total (o maior país no topo)
         pais_order = df_vendas.groupby("País").size().sort_values(ascending=False).index.tolist()
 
         fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado",
@@ -265,21 +268,21 @@ if not df_base.empty:
                       category_orders={"País": pais_order},
                       text="Qtd")
 
-        # Ajustes de estilo: Branco, Reto e Força o texto para dentro (insidetext) 
-        # para evitar que fiquem desalinhados fora da barra
+        # 3. Estética dos Rótulos
         fig4.update_traces(
-            textposition='inside',     # Mantém os números dentro dos pedaços da barra
-            textangle=0,               # Não rotaciona
-            textfont_color="white",    # Cor branca
+            textposition='inside',    # Números dentro dos segmentos
+            textangle=0,              # Sempre na horizontal
+            textfont_color="white",   # Texto sempre branco
             insidetextfont=dict(color="white"),
             cliponaxis=False
         )
 
-        # Ajuste do eixo X para dar respiro
+        # Ajuste do limite do eixo X para os nomes dos países e rótulos respirarem
         max_total = df_vendas.groupby("País").size().max()
-        fig4.update_xaxes(range=[0, max_total * 1.1])
+        fig4.update_xaxes(range=[0, max_total * 1.15])
         
-        st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)
+        st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)        
+    
     with c5:
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
         fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor",
