@@ -251,19 +251,32 @@ if not df_base.empty:
         st.plotly_chart(estilo(fig3, integer_y=True), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
-
     with c4:
-        # C4 - RÓTULOS FORA (OUTSIDE)
+        # C4 - RÓTULOS BRANCOS E RETOS
         df_pais = df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd')
         pais_order = df_vendas.groupby("País").size().sort_values(ascending=False).index.tolist()
+        
         fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado",
-                      barmode='stack', orientation='h', title="Clientes por País",
-                      color_discrete_map=PALETA_MAP_DYNAMIC, category_orders={"País": pais_order},
-                      text=df_pais["Qtd"])
-        fig4.update_traces(textposition='outside', cliponaxis=False) # Garante que apareça fora
-        fig4.update_xaxes(range=[0, df_pais.groupby("País")["Qtd"].sum().max() * 1.3])
-        st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)
+                    barmode='stack', orientation='h', title="Clientes por País",
+                    color_discrete_map=PALETA_MAP_DYNAMIC, category_orders={"País": pais_order},
+                    text="Qtd")
 
+        # Ajuste para garantir cor branca e impedir rotação
+        fig4.update_traces(
+            textposition='auto',       # 'auto' funciona melhor em barras empilhadas para evitar sobreposição
+            textangle=0,               # Garante que o número não gire
+            textfont_color="white",    # Força branco
+            insidetextfont=dict(color="white"),
+            outsidetextfont=dict(color="white"),
+            cliponaxis=False
+        )
+
+        # Aumentamos um pouco o range do eixo X para o rótulo final não cortar
+        max_total = df_pais.groupby("País")["Qtd"].sum().max()
+        fig4.update_xaxes(range=[0, max_total * 1.3])
+        
+        st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)
+    
     with c5:
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
         fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor",
