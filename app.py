@@ -27,7 +27,7 @@ st.markdown(f"""
 
     header, footer, .stDeployButton {{ visibility: hidden; display: none; }}
     
-    .main-title {{ font-size: 1.1rem !important; font-weight: bold; margin-bottom: 10px; }}
+    .main-title {{ font-size: 1.3rem !important; font-weight: bold; margin-bottom: 10px; }}
     
     .channel-row {{
         display: flex;
@@ -208,8 +208,8 @@ if not df_base.empty:
     def estilo(fig, show_y=True, show_x=True, integer_x=False, integer_y=False):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color=TEXT_COLOR, size=11),
-            title=dict(x=0, font=dict(color=TEXT_COLOR, size=16)),
+            font=dict(color=TEXT_COLOR, size=12),
+            title=dict(x=0, font=dict(color=TEXT_COLOR, size=18)),
             margin=dict(l=60, r=40, t=40, b=10), height=230,
             hovermode=False, showlegend=False,
             xaxis=dict(showgrid=False, visible=show_x, title=None, automargin=True),
