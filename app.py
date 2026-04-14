@@ -71,6 +71,26 @@ st.markdown(f"""
         background-color: #1E293B !important;
         color: #FFFFFF !important;
     }}
+
+    .global-legend {{
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 10px;
+        font-size: 0.8rem;
+    }}
+
+    .legend-item {{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }}
+
+    .legend-color {{
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+    }}
     
     @media (max-width: 768px) {{
         .channel-row {{ flex-direction: column; align-items: flex-start; }}
@@ -110,6 +130,15 @@ if not df_base.empty:
     col_t, col_f1, col_f2 = st.columns([2, 1, 1])
     col_t.markdown('<p class="main-title">📊 CRM Executive</p>', unsafe_allow_html=True)
     
+    # LEGENDA GLOBAL
+    st.markdown(f"""
+        <div class="global-legend">
+            <div class="legend-item"><div class="legend-color" style="background:{COLOR_LEAD}"></div>Lead</div>
+            <div class="legend-item"><div class="legend-color" style="background:{COLOR_KALIL}"></div>Kalil</div>
+            <div class="legend-item"><div class="legend-color" style="background:{COLOR_OUTRO}"></div>Outro</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
     meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
     mes_filtro = col_f1.selectbox("", meses, label_visibility="collapsed")
 
@@ -130,7 +159,6 @@ if not df_base.empty:
 
     df_vendas = df[df['Total Pago'] > 0].copy()
 
-    # Lógica de Faixa Etária
     def agrupar_idade(idade):
         try:
             idade = int(float(idade))
@@ -145,49 +173,14 @@ if not df_base.empty:
     ordem_faixas = ["20-25", "26-30", "31-35", "36-40", "40+"]
     ordem_canais = ["Lead", "Kalil", nome_outro_agrupado]
 
-    def custom_metric(label, value, delta=None, delta_color="#4ADE80"):
-        delta_html = f"<span class='metric-delta' style='color:{delta_color} !important;'>({delta})</span>" if delta else ""
-        return f"""
-            <div class="custom-metric">
-                <span class="metric-label">{label}</span>
-                <span class="metric-value">€ {value:,.0f} {delta_html}</span>
-            </div>
-        """
-
-    def render_channel_row(name, color):
-        subset = df[df['Canal_Agrupado'] == name]
-        if subset.empty and name == "Outro": return
-        fat = subset['Valor'].sum()
-        v, p, s = subset['Pago Vista'].sum(), subset['Pago Parcelado'].sum(), subset['Saldo Parcelado'].sum()
-        def pct(val): return f"{((val/fat)*100):.0f}%" if fat > 0 else "0%"
-        st.markdown(f"""
-            <div class="channel-row">
-                <div class="channel-badge" style="background-color: {color};">{name.upper()}</div>
-                {custom_metric("Total", fat)}
-                {custom_metric("À Vista", v, pct(v))}
-                {custom_metric("Parcelado", p, pct(p))}
-                {custom_metric("Saldo", s, pct(s), "#F87171")}
-            </div>
-        """, unsafe_allow_html=True)
-
-    render_channel_row('Lead', COLOR_LEAD)
-    render_channel_row('Kalil', COLOR_KALIL)
-    render_channel_row(nome_outro_agrupado, COLOR_OUTRO)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- GRÁFICOS (VISUAL UPGRADE) ---
     def estilo(fig, show_y=True, show_x=True, integer_x=False, integer_y=False):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color=TEXT_COLOR, size=11),
             title=dict(x=0, font=dict(color=TEXT_COLOR, size=13)),
-            margin=dict(l=10, r=10, t=40, b=10), height=230,
-            hovermode=False, 
-            legend=dict(
-                orientation="v", yanchor="top", y=1, xanchor="left", x=1.02,
-                font=dict(color=TEXT_COLOR, size=10), title=None
-            ),
+            margin=dict(l=40, r=10, t=40, b=10), height=230,
+            hovermode=False,
+            showlegend=False,
             xaxis=dict(showgrid=False, visible=show_x, title=None),
             yaxis=dict(showgrid=False, visible=show_y, title=None)
         )
@@ -205,65 +198,63 @@ if not df_base.empty:
             if not sub.empty:
                 fd.append({'Etapa': 'Contatos', 'Canal': c, 'Qtd': len(sub)})
                 fd.append({'Etapa': 'Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
-        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal', title="Funil de Vendas", 
-                         color_discrete_map=PALETA_MAP_DYNAMIC, category_orders={"Canal": ordem_canais})
-        fig1.update_traces(textfont=dict(color="white"))
+        fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal',
+                         color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
 
     with c2:
-        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index().sort_values("Valor"), 
-                      x="Valor", y="Categoria", orientation='h', title="Mix de Vendas (€)", 
+        fig2 = px.bar(df_vendas.groupby("Categoria")["Valor"].sum().reset_index().sort_values("Valor"),
+                      x="Valor", y="Categoria", orientation='h',
                       color_discrete_sequence=[COLOR_LEAD], text_auto='.2s')
-        fig2.update_traces(textposition='outside', cliponaxis=False)
+        fig2.update_traces(textposition='outside')
         st.plotly_chart(estilo(fig2, show_x=False), use_container_width=True, config=conf)
 
     with c3:
         df_idade_qtd = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"]).size().reset_index(name='Qtd')
-        fig3 = px.bar(df_idade_qtd, x="Faixa Etária", y="Qtd", color="Canal_Agrupado", barmode='group', 
-                      title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC,
-                      category_orders={"Faixa Etária": ordem_faixas, "Canal_Agrupado": ordem_canais})
+        fig3 = px.bar(df_idade_qtd, x="Faixa Etária", y="Qtd", color="Canal_Agrupado",
+                      barmode='group', color_discrete_map=PALETA_MAP_DYNAMIC,
+                      category_orders={"Faixa Etária": ordem_faixas})
         st.plotly_chart(estilo(fig3, integer_y=True), use_container_width=True, config=conf)
 
     c4, c5, c6 = st.columns(3)
+
     with c4:
-        # Gráfico 4: Clientes por País (Barras Horizontais Empilhadas)
         df_pais = df_vendas.groupby(["País", "Canal_Agrupado"]).size().reset_index(name='Qtd')
-        pais_order = df_vendas.groupby("País").size().sort_values().index.tolist()
-        fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado", barmode='stack', orientation='h',
-                      title="Clientes por País", color_discrete_map=PALETA_MAP_DYNAMIC,
-                      category_orders={"País": pais_order, "Canal_Agrupado": ordem_canais}, text_auto=True)
+        pais_order = df_vendas.groupby("País").size().sort_values(ascending=False).index.tolist()
+
+        fig4 = px.bar(df_pais, y="País", x="Qtd", color="Canal_Agrupado",
+                      barmode='stack', orientation='h',
+                      color_discrete_map=PALETA_MAP_DYNAMIC,
+                      category_orders={"País": pais_order})
+
+        fig4.update_traces(
+            texttemplate='%{x}',
+            textposition='outside'
+        )
+
         st.plotly_chart(estilo(fig4, show_x=False, integer_x=True), use_container_width=True, config=conf)
 
     with c5:
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
-        fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor", color="Canal_Agrupado", barmode='group', 
-                      title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC,
-                      category_orders={"Faixa Etária": ordem_faixas, "Canal_Agrupado": ordem_canais})
+        fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor",
+                      color="Canal_Agrupado", barmode='group',
+                      color_discrete_map=PALETA_MAP_DYNAMIC)
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
 
     with c6:
-        # Gráfico 6: Top 5 Devedores (Barras Horizontais com Destaque)
         df_saldo = df_vendas[df_vendas['Saldo Total'] > 0].copy()
         if not df_saldo.empty:
-            def treat_name(name):
-                clean = str(name).replace("[", "").replace("]", "").replace("'", "").replace(",", "")
-                return (clean[:15] + '..') if len(clean) > 16 else clean
-
-            df_saldo['Cliente'] = df_saldo['Cliente'].apply(treat_name)
+            df_saldo['Cliente'] = df_saldo['Cliente'].astype(str).str[:18]
             df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
-            
-            # Reverter ordem para que o maior fique no topo no gráfico horizontal
-            df_saldo = df_saldo.iloc[::-1]
-            
-            fig6 = px.bar(df_saldo, y="Cliente", x="Saldo Total", color="Canal_Agrupado", 
-                          orientation='h', title="Top 5 Devedores (€)", 
+
+            fig6 = px.bar(df_saldo, y="Cliente", x="Saldo Total",
+                          color="Canal_Agrupado",
+                          orientation='h',
                           color_discrete_map=PALETA_MAP_DYNAMIC,
-                          category_orders={"Canal_Agrupado": ordem_canais}, text_auto=',.0f')
-            
-            # Ajuste de destaque: Reduzir opacidade de quem não é o Top 1
-            opacities = [0.4] * (len(df_saldo)-1) + [1.0]
-            fig6.update_traces(marker_opacity=opacities, textposition='outside', cliponaxis=False)
-            
+                          text=df_saldo["Saldo Total"].apply(lambda x: f"€ {x:,.0f}"))
+
+            fig6.update_traces(textposition='outside')
+
             st.plotly_chart(estilo(fig6, show_x=False), use_container_width=True, config=conf)
 
 st.write(""); st.write("")
