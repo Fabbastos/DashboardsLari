@@ -209,7 +209,7 @@ if not df_base.empty:
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color=TEXT_COLOR, size=11),
-            title=dict(x=0, font=dict(color=TEXT_COLOR, size=13)),
+            title=dict(x=0, font=dict(color=TEXT_COLOR, size=16)),
             margin=dict(l=60, r=40, t=40, b=10), height=230,
             hovermode=False, showlegend=False,
             xaxis=dict(showgrid=False, visible=show_x, title=None, automargin=True),
