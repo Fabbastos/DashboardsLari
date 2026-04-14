@@ -130,14 +130,7 @@ if not df_base.empty:
     col_t, col_f1, col_f2 = st.columns([2, 1, 1])
     col_t.markdown('<p class="main-title">📊 CRM Executive</p>', unsafe_allow_html=True)
 
-    # LEGENDA GLOBAL
-    st.markdown(f"""
-        <div class="global-legend">
-            <div class="legend-item"><div class="legend-color" style="background:{COLOR_LEAD}"></div>Lead</div>
-            <div class="legend-item"><div class="legend-color" style="background:{COLOR_KALIL}"></div>Kalil</div>
-            <div class="legend-item"><div class="legend-color" style="background:{COLOR_OUTRO}"></div>Outro</div>
-        </div>
-    """, unsafe_allow_html=True)
+
     
     meses = ["Total"] + sorted(df_base['Mês'].dropna().unique().tolist())
     mes_filtro = col_f1.selectbox("", meses, label_visibility="collapsed")
@@ -202,7 +195,14 @@ if not df_base.empty:
     render_channel_row(nome_outro_agrupado, COLOR_OUTRO)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
+    # LEGENDA GLOBAL
+    st.markdown(f"""
+        <div class="global-legend">
+            <div class="legend-item"><div class="legend-color" style="background:{COLOR_LEAD}"></div>Lead</div>
+            <div class="legend-item"><div class="legend-color" style="background:{COLOR_KALIL}"></div>Kalil</div>
+            <div class="legend-item"><div class="legend-color" style="background:{COLOR_OUTRO}"></div>Outro</div>
+        </div>
+    """, unsafe_allow_html=True)
     def estilo(fig, show_y=True, show_x=True, integer_x=False, integer_y=False):
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
