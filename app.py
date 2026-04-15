@@ -83,17 +83,49 @@ st.markdown(f"""
         border-radius: 2px;
     }}
 
+    /* ========================= */
+    /* SELECTBOX FORÇADO ESCURO */
+    /* ========================= */
+
+    /* Caixa fechada */
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
     }}
-    
+
+    /* Texto dentro */
+    div[data-baseweb="select"] span {{
+        color: #FFFFFF !important;
+    }}
+
+    /* Dropdown aberto */
+    div[role="listbox"] {{
+        background-color: #1E293B !important;
+    }}
+
+    /* Opções */
+    div[role="option"] {{
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+    }}
+
+    /* Hover */
+    div[role="option"]:hover {{
+        background-color: #334155 !important;
+    }}
+
+    /* Selecionado */
+    div[aria-selected="true"] {{
+        background-color: #475569 !important;
+        color: #FFFFFF !important;
+    }}
+
     @media (max-width: 768px) {{
         .channel-row {{ flex-direction: column; align-items: flex-start; }}
         .custom-metric {{ width: 100%; }}
     }}
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # 2. Conexão e Carga de Dados
 SHEET_ID = "1mVcogReqnHTyzAes_NJYu0MBHEDbqyj1_suJMGOnf0Q"
@@ -223,6 +255,7 @@ if not df_base.empty:
     c1, c2, c3 = st.columns(3)
 
     with c1:
+        
         fd = []
         for c in ["Lead", "Kalil", nome_outro_agrupado]:
             sub = df[df['Canal_Agrupado'] == c]
@@ -231,6 +264,10 @@ if not df_base.empty:
                 fd.append({'Etapa': 'Clientes', 'Canal': c, 'Qtd': len(sub[sub['Total Pago'] > 0])})
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal',
                          title="Funil de Vendas", color_discrete_map=PALETA_MAP_DYNAMIC)
+        fig1.update_traces(
+        textfont=dict(color="white"),
+        textposition="inside"
+        )
         st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
 
     with c2:
