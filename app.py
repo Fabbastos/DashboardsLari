@@ -87,51 +87,38 @@ st.markdown(f"""
     /* SELECTBOX HARD OVERRIDE   */
     /* ========================= */
 
-    /* Caixa fechada */
+    /* Força fundo escuro e letra branca nos filtros independente do tema */
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
         border: 1px solid #475569 !important;
     }}
 
-    /* Texto */
+    /* Texto dentro do select */
     div[data-baseweb="select"] * {{
         color: #FFFFFF !important;
     }}
 
-    /* ===== DROPDOWN (FORÇA TOTAL) ===== */
+    /* DROPDOWN REAL (ESSA É A CHAVE) */
+    div[data-baseweb="popover"] {{
+        background-color: #1E293B !important;
+    }}
 
-    /* Portal inteiro */
-    body div[data-baseweb="menu"] *,
-    body div[data-baseweb="popover"] *,
-    body ul[role="listbox"] *,
-    body li[role="option"] * {{
+    /* Tudo dentro do dropdown */
+    div[data-baseweb="popover"] * {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
     }}
 
-    /* Container principal */
-    body div[data-baseweb="menu"],
-    body div[data-baseweb="popover"],
-    body ul[role="listbox"] {{
-        background-color: #1E293B !important;
-    }}
-
-    /* Opções */
-    body li[role="option"] {{
-        background-color: #1E293B !important;
-        color: #FFFFFF !important;
-    }}
-
-    /* Hover */
-    body li[role="option"]:hover {{
+    /* Hover mais bonito */
+    div[data-baseweb="popover"] li:hover {{
         background-color: #334155 !important;
     }}
-
+            
     /* Selecionado */
-    body li[role="option"][aria-selected="true"] {{
-        background-color: #475569 !important;
-        color: #FFFFFF !important;
+    div[data-baseweb="popover"] li[aria-selected="true"] {{
+    background-color: #475569 !important;
+    color: #FFFFFF !important;
     }}
     @media (max-width: 768px) {{
         .channel-row {{ flex-direction: column; align-items: flex-start; }}
