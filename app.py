@@ -91,6 +91,7 @@ st.markdown(f"""
     div[data-baseweb="select"] > div {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
+        border-color: #475569 !important;
     }}
 
     /* Texto dentro */
@@ -98,28 +99,34 @@ st.markdown(f"""
         color: #FFFFFF !important;
     }}
 
-    /* Dropdown aberto */
-    div[role="listbox"] {{
+    /* ===== DROPDOWN REAL (PORTAL) ===== */
+
+    /* Container do menu */
+    body div[data-baseweb="menu"] {{
+        background-color: #1E293B !important;
+    }}
+
+    /* Lista interna */
+    body div[data-baseweb="menu"] ul {{
         background-color: #1E293B !important;
     }}
 
     /* Opções */
-    div[role="option"] {{
+    body div[data-baseweb="menu"] li {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
     }}
 
     /* Hover */
-    div[role="option"]:hover {{
+    body div[data-baseweb="menu"] li:hover {{
         background-color: #334155 !important;
     }}
 
     /* Selecionado */
-    div[aria-selected="true"] {{
+    body div[data-baseweb="menu"] li[aria-selected="true"] {{
         background-color: #475569 !important;
         color: #FFFFFF !important;
     }}
-
     @media (max-width: 768px) {{
         .channel-row {{ flex-direction: column; align-items: flex-start; }}
         .custom-metric {{ width: 100%; }}
