@@ -253,7 +253,8 @@ if not df_base.empty:
 
     conf = {'staticPlot': True}
     c1, c2, c3 = st.columns(3)
-
+    # Defina a ordem lógica das faixas, incluindo o N/D ao final
+    lista_ordem_idade = ["20-25", "26-30", "31-35", "36-40", "40+", "N/D"]
     with c1:
         
         fd = []
@@ -265,12 +266,12 @@ if not df_base.empty:
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal',
                          title="Funil de Vendas", color_discrete_map=PALETA_MAP_DYNAMIC)
         fig1.update_traces(
-        textfont=dict(color="white", size=14),
-        textposition="inside",
-        # O segredo está aqui: envolvemos o valor em tags <b> (bold)
-        texttemplate="<b>%{value}</b>" 
-        )
-        st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
+    textfont=dict(color="white", size=14),
+    textposition="inside",
+    # O segredo está aqui: envolvemos o valor em tags <b> (bold)
+    texttemplate="<b>%{value}</b>" 
+)
+    st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
 
     with c2:
         # 1. Agrupamos por Categoria E Canal para ter a divisão de cores
@@ -318,11 +319,15 @@ if not df_base.empty:
     with c3:
         # C3 - SEM RÓTULOS (TEXTO)
         df_idade_qtd = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"]).size().reset_index(name='Qtd')
+    
         fig3 = px.bar(df_idade_qtd, x="Faixa Etária", y="Qtd",
-                      color="Canal_Agrupado", barmode='group',
-                      title="Vendas por Idade", color_discrete_map=PALETA_MAP_DYNAMIC)
-        st.plotly_chart(estilo(fig3, integer_y=True), use_container_width=True, config=conf)
+        color="Canal_Agrupado", barmode='group',
+        title="Vendas por Idade", 
+        color_discrete_map=PALETA_MAP_DYNAMIC,
+        # ISSO VAI FORÇAR A ORDEM CORRETA:
+        category_orders={"Faixa Etária": lista_ordem_idade})
 
+        st.plotly_chart(estilo(fig3, integer_y=True), use_container_width=True, config=conf)
     c4, c5, c6 = st.columns(3)
     with c4:
         # 1. Agrupamos os dados por País e Canal
@@ -373,12 +378,15 @@ if not df_base.empty:
     with c5:
         df_idade_valor = df_vendas.groupby(["Faixa Etária", "Canal_Agrupado"])["Valor"].sum().reset_index()
         fig5 = px.bar(df_idade_valor, x="Faixa Etária", y="Valor",
-                      color="Canal_Agrupado", barmode='group',
-                      title="Faturamento por Idade (€)", color_discrete_map=PALETA_MAP_DYNAMIC,
-                      text=df_idade_valor["Valor"].apply(format_number))
+        color="Canal_Agrupado", barmode='group',
+        title="Faturamento por Idade (€)", 
+        color_discrete_map=PALETA_MAP_DYNAMIC,
+        text=df_idade_valor["Valor"].apply(format_number),
+        # ISSO VAI FORÇAR A ORDEM CORRETA:
+        category_orders={"Faixa Etária": lista_ordem_idade})
+
         fig5.update_traces(textposition='outside')
         st.plotly_chart(estilo(fig5), use_container_width=True, config=conf)
-
     with c6:
         df_saldo = df_vendas[df_vendas['Saldo Total'] > 0].copy()
         if not df_saldo.empty:
@@ -388,9 +396,9 @@ if not df_base.empty:
             df_saldo['Cliente'] = df_saldo['Cliente'].apply(treat_name)
             df_saldo = df_saldo.sort_values("Saldo Total", ascending=False).head(5)
             fig6 = px.bar(df_saldo, y="Cliente", x="Saldo Total", color="Canal_Agrupado",
-                          orientation='h', title="Top 5 Devedores (€)",
-                          color_discrete_map=PALETA_MAP_DYNAMIC,
-                          text=df_saldo["Saldo Total"].apply(format_number))
+                            orientation='h', title="Top 5 Devedores (€)",
+                            color_discrete_map=PALETA_MAP_DYNAMIC,
+                            text=df_saldo["Saldo Total"].apply(format_number))
             fig6.update_traces(textposition='outside')
             fig6.update_xaxes(range=[0, df_saldo["Saldo Total"].max() * 1.3])
             st.plotly_chart(estilo(fig6, show_x=False), use_container_width=True, config=conf)
