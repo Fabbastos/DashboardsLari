@@ -266,12 +266,12 @@ if not df_base.empty:
         fig1 = px.funnel(pd.DataFrame(fd), x='Qtd', y='Etapa', color='Canal',
                          title="Funil de Vendas", color_discrete_map=PALETA_MAP_DYNAMIC)
         fig1.update_traces(
-    textfont=dict(color="white", size=14),
-    textposition="inside",
-    # O segredo está aqui: envolvemos o valor em tags <b> (bold)
-    texttemplate="<b>%{value}</b>" 
-)
-    st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
+        textfont=dict(color="white", size=14),
+        textposition="inside",
+        # O segredo está aqui: envolvemos o valor em tags <b> (bold)
+        texttemplate="<b>%{value}</b>" 
+        )
+        st.plotly_chart(estilo(fig1, show_y=True, show_x=False), use_container_width=True, config=conf)
 
     with c2:
         # 1. Agrupamos por Categoria E Canal para ter a divisão de cores
